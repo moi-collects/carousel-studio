@@ -82,6 +82,11 @@ button.text:hover{color:var(--fg)}
 .tpl b{font-weight:600;font-size:13px}
 .tpl span{font-size:11.5px;color:var(--muted);line-height:1.4}
 .tpl[aria-pressed="true"]{border-color:var(--fg);background:var(--surface)}
+.bxl{display:flex;flex-direction:column;gap:8px}
+.bx{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:8px}
+.bx .drop{padding:6px}.bx .drop .th{width:36px;height:36px}
+.bx4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.bx4 input[type=number]{padding:7px 6px;font-size:13px}
 .add{display:flex;gap:8px}
 .add button{flex:1}
 /* preview */
@@ -134,7 +139,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
         <div class="body">
           <div class="tpls" role="group" aria-label="제품 슬라이드 템플릿">
             <button class="tpl" data-tpl="A"><b>A · 기본</b><span>배경색 위 제품, 하단 흰 글씨</span></button>
-            <button class="tpl" data-tpl="B"><b>B · 매거진</b><span>여백 있는 액자, 번호와 라인</span></button>
+            <button class="tpl" data-tpl="B"><b>B · 이미지 박스</b><span>A 레이아웃 위에 작은 이미지 박스 추가</span></button>
             <button class="tpl" data-tpl="C"><b>C · 스크랩</b><span>폴라로이드에 테이프, 키치한 무드</span></button>
             <button class="tpl" data-tpl="D"><b>D · 태그</b><span>사진 가득, 하단 가격표 라벨</span></button>
           </div>
@@ -209,7 +214,8 @@ const state={
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22};
 let stLast=Object.assign({},stDefault);
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],sample:false},stLast,o)}
+const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],sample:false},stLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -303,31 +309,30 @@ function drawStickers(x,p){
     p._rects[i]={x:pos.x,y:pos.y,w,h};
   });
 }
+function drawBoxes(x,p){
+  p._boxRects=[];
+  (p.boxes||[]).forEach((b,i)=>{
+    b.x=Math.max(-b.w/2,Math.min(W-b.w/2,b.x));b.y=Math.max(-b.h/2,Math.min(H-b.h/2,b.y));
+    if(b.img){const s=Math.max(b.w/b.img.width,b.h/b.img.height),dw=b.img.width*s,dh=b.img.height*s;
+      x.save();x.beginPath();x.rect(b.x,b.y,b.w,b.h);x.clip();x.drawImage(b.img,b.x+(b.w-dw)/2,b.y+(b.h-dh)/2,dw,dh);x.restore()}
+    else{x.fillStyle='rgba(255,255,255,.55)';x.fillRect(b.x,b.y,b.w,b.h);x.fillStyle='rgba(30,29,27,.5)';x.font=`500 ${Math.max(14,Math.min(26,b.w/9))}px ${FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText('이미지 '+(i+1),b.x+b.w/2,b.y+b.h/2);x.textAlign='left';x.textBaseline='alphabetic'}
+    if(b.lw>0){x.strokeStyle=b.lc;x.lineWidth=b.lw;x.strokeRect(b.x+b.lw/2,b.y+b.lw/2,b.w-b.lw,b.h-b.lw)}
+    p._boxRects[i]={x:b.x,y:b.y,w:b.w,h:b.h};
+  });
+}
 function rrect(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()}
 function drawProduct(cv,p){
   const x=cv.getContext('2d');x.clearRect(0,0,W,H);resetType(x);x.shadowBlur=0;
   const t=state.tpl||'A',idx=state.products.indexOf(p),total=state.products.length;
-  if(t==='A'){
+  if(t==='A'||t==='B'){
     const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,shade(state.bg,.18));g.addColorStop(1,state.bg);x.fillStyle=g;x.fillRect(0,0,W,H);
     drawAccount(x,'rgba(255,255,255,.8)');
     if(p.img&&p.fit==='cover'){placeImg(x,p,0,0,W,H,'cover');const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}
     else if(p.img){const box=840*p.zoom,s=Math.min(box/p.img.width,box/p.img.height),dw=p.img.width*s,dh=p.img.height*s;x.drawImage(p.img,(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh)}
     else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)');
+    if(t==='B')drawBoxes(x,p);
     drawStickers(x,p);
     x.shadowColor='rgba(0,0,0,.22)';x.shadowBlur=10;textBlock(x,p,'#fff');x.shadowBlur=0;
-  }
-  else if(t==='B'){
-    x.fillStyle='#F6F5F2';x.fillRect(0,0,W,H);
-    drawAccount(x,'#8C8983');
-    const fx=100,fy=100,fw=W-200,fh=900;
-    x.fillStyle=state.bg;x.fillRect(fx,fy,fw,fh);
-    if(p.img)placeImg(x,p,fx,fy,fw,fh,p.fit);else placeholder(x,fx,fy,fw,fh,'rgba(255,255,255,.9)');
-    setType(x,500,20,-20);x.fillStyle='#8C8983';
-    x.fillText(String(idx+1).padStart(2,'0')+' / '+String(total).padStart(2,'0'),100,fy+fh+56);
-    x.textAlign='right';x.fillText('CURATED PICK',W-100,fy+fh+56);x.textAlign='left';resetType(x);
-    x.fillStyle='#1E1D1B';x.fillRect(100,fy+fh+78,W-200,2);
-    drawStickers(x,p);
-    textBlock(x,p,'#1E1D1B');
   }
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
@@ -397,6 +402,18 @@ function renderList(){
         <label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
         <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
         <div class="two"><label>가로 위치<input type="range" data-f="offX" id="ox${p.id}" min="-1" max="1" step="0.01"></label><label>세로 위치<input type="range" data-f="offY" id="o${p.id}" min="-1" max="1" step="0.01"></label></div>
+        ${state.tpl==='B'?`<div class="sub-h">이미지 박스 <span class="hint" style="font-weight:400">(최대 4개 · 미리보기에서 끌어서 위치 조정)</span></div>
+        <div class="bxl">${(p.boxes||[]).map((b,j)=>`<div class="bx" data-b="${j}">
+          <div class="drop"><input type="file" accept="image/*" data-bimg="${j}" aria-label="이미지 박스 ${j+1} 사진 선택"><span class="th" style="${b.img?`background-image:url(${b.img.src})`:''}"></span><span>${b.img?'박스 '+(j+1)+' 사진 바꾸기':'박스 '+(j+1)+' 사진 올리기'}</span></div>
+          <div class="bx4">
+            <label>가로 (px)<input type="number" data-bf="w" min="40" max="1080" step="1" value="${b.w}" inputmode="numeric"></label>
+            <label>세로 (px)<input type="number" data-bf="h" min="40" max="1350" step="1" value="${b.h}" inputmode="numeric"></label>
+            <label>선 두께 (px)<input type="number" data-bf="lw" min="0" max="40" step="0.5" value="${b.lw}" inputmode="decimal"></label>
+            <label>선 색<span class="cpick"><input type="color" data-bf="lc" value="${b.lc.toLowerCase()}" aria-label="선 색"></span></label>
+          </div>
+          <div class="rowbtn"><label class="unit" style="flex-direction:row;gap:6px">HEX<input type="text" data-bhex="lc" maxlength="7" spellcheck="false" value="${b.lc.toUpperCase()}" aria-label="선 색 HEX" style="width:96px;padding:6px 8px;font-size:12.5px;text-transform:uppercase"></label><span><button class="text" data-act="bxAll" data-j="${j}">선 스타일 전체 적용</button><button class="text" data-act="bxDel" data-j="${j}">박스 삭제</button></span></div>
+        </div>`).join('')}</div>
+        ${(p.boxes||[]).length<4?'<button data-act="bxAdd">이미지 박스 추가</button>':''}`:''}
         <div class="sub-h">스티커</div>
         <label>코멘트 (줄마다 하나 · 미리보기에서 끌어서 위치 조정)<textarea data-f="stickers" id="s${p.id}" rows="2"></textarea></label>
         <div class="stk">
@@ -431,6 +448,14 @@ L.addEventListener('input',e=>{if(e.isComposing||composing)return;onListInput(e)
 function onListInput(e){
   const card=e.target.closest('.pitem');if(!card)return;const p=state.products.find(q=>q.id==card.dataset.id);
   if(e.target.dataset.hex){const k=e.target.dataset.hex,v=normHex(e.target.value);if(!v)return;p[k]=v;stLast[k]=v;card.querySelector(`[data-f="${k}"]`).value=v.toLowerCase();schedule();return}
+  const bx=e.target.closest('.bx');
+  if(bx&&(e.target.dataset.bf||e.target.dataset.bhex)){const b=p.boxes[+bx.dataset.b];if(!b)return;
+    if(e.target.dataset.bhex){const v=normHex(e.target.value);if(!v)return;b.lc=v;bxLast.lc=v;bx.querySelector('[data-bf="lc"]').value=v.toLowerCase();schedule();return}
+    const k=e.target.dataset.bf;
+    if(k==='lc'){b.lc=e.target.value.toUpperCase();bxLast.lc=b.lc;bx.querySelector('[data-bhex]').value=b.lc}
+    else{const v=parseFloat(e.target.value),lim={w:[40,1080],h:[40,1350],lw:[0,40]}[k];if(!(v>=lim[0]&&v<=lim[1]))return;
+      if(k!=='lw'){b.x+=(b[k]-v)/2*(k==='w'?1:0);b.y+=(b[k]-v)/2*(k==='h'?1:0)}b[k]=v;bxLast[k]=v}
+    schedule();return}
   const f=e.target.dataset.f;if(!f||f==='img')return;
   if(e.target.type==='color'){const h=card.querySelector(`[data-hex="${f}"]`);if(h)h.value=e.target.value.toUpperCase()}
   if(e.target.type==='range')p[f]=parseFloat(e.target.value);
@@ -442,6 +467,8 @@ function onListInput(e){
   schedule();
 }
 L.addEventListener('change',e=>{
+  if(e.target.dataset.bimg!==undefined&&e.target.files[0]){const p=state.products.find(q=>q.id==e.target.closest('.pitem').dataset.id),b=p.boxes[+e.target.dataset.bimg];
+    loadFile(e.target.files[0]).then(img=>{b.img=img;renderList();schedule()});return}
   if(e.target.dataset.f!=='img'||!e.target.files[0])return;
   const p=state.products.find(q=>q.id==e.target.closest('.pitem').dataset.id);
   loadFile(e.target.files[0]).then(img=>{p.img=img;p.sample=false;p.zoom=1;p.offX=0;p.offY=0;renderList();schedule()});
@@ -452,6 +479,9 @@ function act(e){
   if(a==='toggle'){openId=openId===p.id?null:p.id;if(openId)sel=i+1;renderList();markActive();drawStage();return}
   if(a==='stAll'){state.products.forEach(q=>Object.keys(stDefault).forEach(k=>q[k]=p[k]));Object.assign(stLast,...Object.keys(stDefault).map(k=>({[k]:p[k]})));schedule();toast('모든 제품에 적용했어요');return}
   if(a==='stReset'){p.stPos=[];schedule();return}
+  if(a==='bxAdd'){if(p.boxes.length<4){const n=p.boxes.length;p.boxes.push({img:null,w:bxLast.w,h:bxLast.h,lw:bxLast.lw,lc:bxLast.lc,x:130+n*40,y:340+n*40})}renderList();schedule();return}
+  if(a==='bxDel'){p.boxes.splice(+el.dataset.j,1);renderList();schedule();return}
+  if(a==='bxAll'){const s=p.boxes[+el.dataset.j];state.products.forEach(q=>(q.boxes||[]).forEach(b=>{b.lw=s.lw;b.lc=s.lc}));bxLast.lw=s.lw;bxLast.lc=s.lc;renderList();schedule();toast('모든 이미지 박스에 적용했어요');return}
   if(a==='del'){state.products.splice(i,1);if(openId===p.id)openId=null}
   if(a==='up'&&i>0)[state.products[i-1],state.products[i]]=[state.products[i],state.products[i-1]];
   if(a==='down'&&i<state.products.length-1)[state.products[i+1],state.products[i]]=[state.products[i],state.products[i+1]];
@@ -476,15 +506,22 @@ const canvases=[];let sel=0;
 const stage=$('stage'),sctx=stage.getContext('2d');
 function drawStage(){if(!canvases[sel])sel=0;sctx.clearRect(0,0,W,H);sctx.drawImage(canvases[sel].cv,0,0);
   $('stageLab').textContent=String(sel+1).padStart(2,'0')+' · '+(sel===0?'표지':(state.products[sel-1].brand||'제품'));
-  $('stageHint').textContent=sel>0&&state.products[sel-1]._rects&&state.products[sel-1]._rects.length?'스티커를 끌어서 옮길 수 있어요':''}
+  const sp=sel>0&&state.products[sel-1],hasS=sp&&sp._rects&&sp._rects.length,hasB=sp&&state.tpl==='B'&&sp.boxes&&sp.boxes.length;
+  $('stageHint').textContent=hasS&&hasB?'스티커·이미지 박스를 끌어서 옮길 수 있어요':hasB?'이미지 박스를 끌어서 옮길 수 있어요':hasS?'스티커를 끌어서 옮길 수 있어요':''}
 function select(i){sel=i;const p=state.products[i-1];if(p&&openId!==p.id){openId=p.id;renderList();const el=document.querySelector(`.pitem[data-id="${p.id}"]`);el&&el.scrollIntoView({block:'nearest',behavior:'smooth'})}markActive();drawStage()}
 (function(){
   let drag=null;
   const pt=e=>{const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}};
-  const hit=q=>{const p=state.products[sel-1];if(!p||!p._rects)return-1;for(let k=p._rects.length-1;k>=0;k--){const r=p._rects[k];if(r&&q.x>=r.x&&q.x<=r.x+r.w&&q.y>=r.y&&q.y<=r.y+r.h)return k}return-1};
-  stage.addEventListener('touchstart',e=>{if(hit(pt(e.touches[0]))>=0)e.preventDefault()},{passive:false});
-  stage.addEventListener('pointerdown',e=>{const q=pt(e),k=hit(q);if(k<0)return;const p=state.products[sel-1];drag={p,k,dx:q.x-p.stPos[k].x,dy:q.y-p.stPos[k].y};stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
-  stage.addEventListener('pointermove',e=>{const q=pt(e);if(!drag){stage.style.cursor=hit(q)>=0?'grab':'';return}drag.p.stPos[drag.k]={x:q.x-drag.dx,y:q.y-drag.dy};drawProduct(canvases[sel].cv,drag.p);drawStage()});
+  const inR=(r,q)=>r&&q.x>=r.x&&q.x<=r.x+r.w&&q.y>=r.y&&q.y<=r.y+r.h;
+  const hit=q=>{const p=state.products[sel-1];if(!p)return null;
+    if(p._rects)for(let k=p._rects.length-1;k>=0;k--)if(inR(p._rects[k],q))return{t:'s',k};
+    if(state.tpl==='B'&&p._boxRects)for(let k=p._boxRects.length-1;k>=0;k--)if(inR(p._boxRects[k],q))return{t:'b',k};
+    return null};
+  stage.addEventListener('touchstart',e=>{if(hit(pt(e.touches[0])))e.preventDefault()},{passive:false});
+  stage.addEventListener('pointerdown',e=>{const q=pt(e),h=hit(q);if(!h)return;const p=state.products[sel-1],o=h.t==='s'?p.stPos[h.k]:p.boxes[h.k];drag={p,h,dx:q.x-o.x,dy:q.y-o.y};stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
+  stage.addEventListener('pointermove',e=>{const q=pt(e);if(!drag){stage.style.cursor=hit(q)?'grab':'';return}
+    if(drag.h.t==='s')drag.p.stPos[drag.h.k]={x:q.x-drag.dx,y:q.y-drag.dy};else{const b=drag.p.boxes[drag.h.k];b.x=q.x-drag.dx;b.y=q.y-drag.dy}
+    drawProduct(canvases[sel].cv,drag.p);drawStage()});
   const end=()=>{if(drag){drag=null;stage.style.cursor=''}};
   stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);
 })();
@@ -535,9 +572,9 @@ function setDl(){$('saveAll').hidden=!downloads;$('saveCur').hidden=!downloads;$
 let t0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t0);t0=setTimeout(()=>t.classList.remove('on'),1800)}
 
 /* ---------- templates ---------- */
-const TPLN={A:'A · 기본',B:'B · 매거진',C:'C · 스크랩',D:'D · 태그'};
+const TPLN={A:'A · 기본',B:'B · 이미지 박스',C:'C · 스크랩',D:'D · 태그'};
 function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||''}
-document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{state.tpl=b.dataset.tpl;markTpl();schedule()}));
+document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{state.tpl=b.dataset.tpl;markTpl();renderList();schedule()}));
 
 /* ---------- light persistence (text settings only) ---------- */
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
