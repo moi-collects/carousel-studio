@@ -216,7 +216,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
     <div class="col">
       <div class="stage">
         <canvas id="stage" width="1080" height="1350" aria-label="선택한 슬라이드 미리보기"></canvas>
-        <div class="stage-meta"><b id="stageLab"></b><span id="stageHint"></span><button class="text" id="saveCur">이 장 저장</button></div>
+        <div class="stage-meta"><b id="stageLab"></b><span id="stageHint"></span><span style="display:flex;gap:4px;flex:none"><button class="text" id="bgLock" aria-pressed="false">배경 잠금 꺼짐</button><button class="text" id="saveCur">이 장 저장</button></span></div>
         <div class="strip" id="slides"></div>
       </div>
       <details class="group cap">
@@ -236,14 +236,14 @@ let uid=0,openId=null,downloads=null;
 const state={
   coverTitle:"표지 제목이\n노출됩니다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
   account:"moi.collects",bg:"#D6D7D9",tpl:"A",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,mvW:660,emoji:"🍽️",unit:"₩",
-  intro:"식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .",
-  sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects 🎾",products:[]
+  intro:"",
+  sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects",products:[],bgLock:false
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22,stLine:'solid',stOpacity:100};
 let stLast=Object.assign({},stDefault);
 const lyLast={layout:'price',alignA:'left',alignC:'center',alignD:'left'};
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,year:'',mv:null,split:1,imgX:[null,null,null],bgX:[null,null,null],sample:false},stLast,lyLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,year:'',mv:null,split:1,imgX:[null,null,null],bgX:[null,null,null],offs:[null,null,null,null],bgOff:[null,null,null,null],sample:false},stLast,lyLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -461,8 +461,14 @@ function drawMovie(x,p){
 function tileRects(n){return n===4?[[0,0,W/2,H/2],[W/2,0,W/2,H/2],[0,H/2,W/2,H/2],[W/2,H/2,W/2,H/2]]:n===2?[[0,0,W,H/2],[0,H/2,W,H/2]]:[[0,0,W,H]]}
 function coverDraw(x,img,r,zoom=1,ox=0,oy=0){const[bx,by,bw,bh]=r;x.save();x.beginPath();x.rect(bx,by,bw,bh);x.clip();const s=Math.max(bw/img.width,bh/img.height)*zoom,dw=img.width*s,dh=img.height*s;x.drawImage(img,bx+(bw-dw)/2+ox*bw*.5,by+(bh-dh)/2+oy*bh*.5,dw,dh);x.restore()}
 function hasBg(p){const n=p.split||1;return[p.bg,...(p.bgX||[])].slice(0,n).some(Boolean)}
+function addHit(p,kind,i,r,img,zoom,mode){const[bx,by,bw,bh]=r;let fx,fy,lx,ly;
+  if(mode==='contain400'){fx=fy=400;lx=ly=1.5}else if(mode==='contain'){fx=bw*.35;fy=bh*.35;lx=ly=1.5}
+  else{fx=bw*.5;fy=bh*.5;const s=Math.max(bw/img.width,bh/img.height)*zoom;lx=Math.abs(img.width*s-bw)/2/fx;ly=Math.abs(img.height*s-bh)/2/fy}
+  (p._bgHits||(p._bgHits=[])).push({kind,i,r:{x:bx,y:by,w:bw,h:bh},fx,fy,lx,ly})}
+function getOff(p,h){if(h.kind==='bg')return p.bgOff[h.i]||{x:0,y:0};if(h.kind==='A'&&h.i>0)return p.offs[h.i]||{x:0,y:0};return{x:p.offX,y:p.offY}}
+function setOff(p,h,o){if(h.kind==='bg')p.bgOff[h.i]=o;else if(h.kind==='A'&&h.i>0)p.offs[h.i]=o;else{p.offX=o.x;p.offY=o.y}}
 function drawBgTiles(x,p){const n=p.split||1,imgs=[p.bg,...(p.bgX||[])].slice(0,n);let any=false;
-  tileRects(n).forEach((r,i)=>{if(imgs[i]){coverDraw(x,imgs[i],r);any=true}});
+  tileRects(n).forEach((r,i)=>{if(imgs[i]){const o=(p.bgOff||[])[i]||{x:0,y:0};coverDraw(x,imgs[i],r,1,o.x,o.y);addHit(p,'bg',i,r,imgs[i],1);any=true}});
   if(any){x.fillStyle=`rgba(0,0,0,${(p.bgDim??50)/100})`;x.fillRect(0,0,W,H)}}
 function drawStickers(x,p){
   const st=p.stickers.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,6);
@@ -493,16 +499,16 @@ function drawBoxes(x,p){
 }
 function rrect(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()}
 function drawProduct(cv,p){
-  const x=cv.getContext('2d');x.clearRect(0,0,W,H);resetType(x);x.shadowBlur=0;
+  p._bgHits=[];const x=cv.getContext('2d');x.clearRect(0,0,W,H);resetType(x);x.shadowBlur=0;
   const t=state.tpl||'A',idx=state.products.indexOf(p),total=state.products.length;
   if(t==='A'){
     const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,shade(state.bg,.18));g.addColorStop(1,state.bg);x.fillStyle=g;x.fillRect(0,0,W,H);
     drawAccount(x,'rgba(255,255,255,.8)');
     const nA=p.split||1;
-    if(nA>1){const imgs=[p.img,...(p.imgX||[])].slice(0,nA);let any=false;tileRects(nA).forEach((r,i)=>{if(imgs[i]){coverDraw(x,imgs[i],r,p.zoom,p.offX,p.offY);any=true}});
+    if(nA>1){const imgs=[p.img,...(p.imgX||[])].slice(0,nA);let any=false;tileRects(nA).forEach((r,i)=>{if(imgs[i]){const o=i===0?{x:p.offX,y:p.offY}:((p.offs||[])[i]||{x:0,y:0});coverDraw(x,imgs[i],r,p.zoom,o.x,o.y);addHit(p,'A',i,r,imgs[i],p.zoom);any=true}});
       if(any){const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)')}
-    else if(p.img&&p.fit==='cover'){placeImg(x,p,0,0,W,H,'cover');const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}
-    else if(p.img){const box=840*p.zoom,s=Math.min(box/p.img.width,box/p.img.height),dw=p.img.width*s,dh=p.img.height*s;x.drawImage(p.img,(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh)}
+    else if(p.img&&p.fit==='cover'){placeImg(x,p,0,0,W,H,'cover');addHit(p,'A',0,[0,0,W,H],p.img,p.zoom);const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}
+    else if(p.img){const box=840*p.zoom,s=Math.min(box/p.img.width,box/p.img.height),dw=p.img.width*s,dh=p.img.height*s;x.drawImage(p.img,(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh);addHit(p,'Ac',0,[(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh],p.img,1,'contain400')}
     else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)');
     drawBoxes(x,p);
     drawStickers(x,p);
@@ -514,7 +520,7 @@ function drawProduct(cv,p){
     drawAccount(x,'rgba(255,255,255,.8)');
     bookTitle(x,p,'#fff');
     const bw=state.bkW,bh=state.bkH,bx=Math.round((W-bw)/2),by=385;
-    if(p.img)placeImg(x,p,bx,by,bw,bh,p.fit);else{x.fillStyle='rgba(255,255,255,.15)';x.fillRect(bx,by,bw,bh);placeholder(x,bx,by,bw,bh,'rgba(255,255,255,.85)')}
+    if(p.img){placeImg(x,p,bx,by,bw,bh,p.fit);addHit(p,'cover',0,[bx,by,bw,bh],p.img,p.zoom,p.fit==='contain'?'contain':'cover')}else{x.fillStyle='rgba(255,255,255,.15)';x.fillRect(bx,by,bw,bh);placeholder(x,bx,by,bw,bh,'rgba(255,255,255,.85)')}
     if(state.bkLw>0){x.strokeStyle=state.bkLc;x.lineWidth=state.bkLw;x.strokeRect(bx+state.bkLw/2,by+state.bkLw/2,bw-state.bkLw,bh-state.bkLw)}
     drawBoxes(x,p);
     bookDesc(x,p,by+bh,'#fff');
@@ -581,7 +587,7 @@ function renderList(){
         ${state.tpl==='A'&&p.layout==='desc'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(plainRich(autoDesc(p)))}"></textarea></label>`:''}
         ${state.tpl==='D'?'':`<label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
         <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
-        <div class="two"><label>가로 위치<input type="range" data-f="offX" id="ox${p.id}" min="-1" max="1" step="0.01"></label><label>세로 위치<input type="range" data-f="offY" id="o${p.id}" min="-1" max="1" step="0.01"></label></div>`}
+        <p class="hint">사진 위치는 미리보기에서 사진을 끌어서 옮겨요.</p>`}
         ${true?`<div class="sub-h">이미지 박스 <span class="hint" style="font-weight:400">(최대 4개 · 미리보기에서 끌어서 위치 조정)</span></div>
         <div class="bxl">${(p.boxes||[]).map((b,j)=>`<div class="bx" data-b="${j}">
           <div class="drop"><input type="file" accept="image/*" data-bimg="${j}" aria-label="이미지 박스 ${j+1} 사진 선택"><span class="th" style="${b.img?`background-image:url(${b.img.src})`:''}"></span><span>${b.img?'박스 '+(j+1)+' 사진 바꾸기':'박스 '+(j+1)+' 사진 올리기'}</span></div>
@@ -702,8 +708,10 @@ const stage=$('stage'),sctx=stage.getContext('2d');
 function drawStage(){if(!canvases[sel])sel=0;sctx.clearRect(0,0,W,H);sctx.drawImage(canvases[sel].cv,0,0);
   $('stageLab').textContent=String(sel+1).padStart(2,'0')+' · '+(sel===0?'표지':(state.products[sel-1].brand||'제품'));
   const sp=sel>0&&state.products[sel-1],hasS=sp&&sp._rects&&sp._rects.length,hasB=sp&&sp.boxes&&sp.boxes.length;
-  if(sp&&state.tpl==='D'){$('stageHint').textContent='제목·코멘트 박스'+(hasB?'·이미지 박스':'')+(hasS?'·스티커':'')+'를 끌어서 옮길 수 있어요';return}
-  $('stageHint').textContent=hasS&&hasB?'스티커·이미지 박스를 끌어서 옮길 수 있어요':hasB?'이미지 박스를 끌어서 옮길 수 있어요':hasS?'스티커를 끌어서 옮길 수 있어요':''}
+  const parts=[];if(sp){if(hasS)parts.push('스티커');if(state.tpl==='D')parts.push('제목·코멘트 박스');if(hasB)parts.push('이미지 박스');if(!state.bgLock&&sp._bgHits&&sp._bgHits.length)parts.push('사진')}
+  $('stageHint').textContent=parts.length?parts.join('·')+(((parts[parts.length-1].slice(-1).charCodeAt(0)-0xAC00)%28)?'을':'를')+' 끌어서 옮길 수 있어요':'';markLock()}
+function markLock(){const b=$('bgLock');b.setAttribute('aria-pressed',String(!!state.bgLock));b.textContent=state.bgLock?'배경 잠금 켜짐':'배경 잠금 꺼짐';b.style.color=state.bgLock?'var(--fg)':''}
+$('bgLock').addEventListener('click',()=>{state.bgLock=!state.bgLock;persist();drawStage();toast(state.bgLock?'배경 사진이 움직이지 않게 잠갔어요':'배경 사진을 다시 움직일 수 있어요')});
 function select(i){sel=i;const p=state.products[i-1];if(p&&openId!==p.id){openId=p.id;renderList();const el=document.querySelector(`.pitem[data-id="${p.id}"]`);el&&el.scrollIntoView({block:'nearest',behavior:'smooth'})}markActive();drawStage()}
 (function(){
   let drag=null;
@@ -713,11 +721,13 @@ function select(i){sel=i;const p=state.products[i-1];if(p&&openId!==p.id){openId
     if(p._rects)for(let k=p._rects.length-1;k>=0;k--)if(inR(p._rects[k],q))return{t:'s',k};
     if(state.tpl==='D'&&p._mvRects&&p._mvRects.some(r=>inR(r,q)))return{t:'m',k:0};
     if(p._boxRects)for(let k=p._boxRects.length-1;k>=0;k--)if(inR(p._boxRects[k],q))return{t:'b',k};
+    if(!state.bgLock&&p._bgHits)for(let k=p._bgHits.length-1;k>=0;k--)if(inR(p._bgHits[k].r,q))return{t:'g',k,rec:p._bgHits[k]};
     return null};
   stage.addEventListener('touchstart',e=>{if(hit(pt(e.touches[0])))e.preventDefault()},{passive:false});
-  stage.addEventListener('pointerdown',e=>{const q=pt(e),h=hit(q);if(!h)return;const p=state.products[sel-1],o=h.t==='s'?p.stPos[h.k]:h.t==='m'?{x:p.mv.x,y:p.mv.b}:p.boxes[h.k];drag={p,h,dx:q.x-o.x,dy:q.y-o.y};stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
-  stage.addEventListener('pointermove',e=>{const q=pt(e);if(!drag){stage.style.cursor=hit(q)?'grab':'';return}
-    if(drag.h.t==='s')drag.p.stPos[drag.h.k]={x:q.x-drag.dx,y:q.y-drag.dy};else if(drag.h.t==='m'){drag.p.mv={x:q.x-drag.dx,b:q.y-drag.dy}}else{const b=drag.p.boxes[drag.h.k];b.x=q.x-drag.dx;b.y=q.y-drag.dy}
+  stage.addEventListener('pointerdown',e=>{const q=pt(e),h=hit(q);if(!h)return;const p=state.products[sel-1];if(h.t==='g'){drag={p,h,sx:q.x,sy:q.y,o0:Object.assign({},getOff(p,h.rec))}}else{const o=h.t==='s'?p.stPos[h.k]:h.t==='m'?{x:p.mv.x,y:p.mv.b}:p.boxes[h.k];drag={p,h,dx:q.x-o.x,dy:q.y-o.y}}stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
+  stage.addEventListener('pointermove',e=>{const q=pt(e);if(!drag){const hh=hit(q);stage.style.cursor=hh?(hh.t==='g'?'move':'grab'):'';return}
+    if(drag.h.t==='g'){const r=drag.h.rec,cl=(v,l)=>Math.max(-l,Math.min(l,v));setOff(drag.p,r,{x:cl(drag.o0.x+(q.x-drag.sx)/r.fx,r.lx),y:cl(drag.o0.y+(q.y-drag.sy)/r.fy,r.ly)})}
+    else if(drag.h.t==='s')drag.p.stPos[drag.h.k]={x:q.x-drag.dx,y:q.y-drag.dy};else if(drag.h.t==='m'){drag.p.mv={x:q.x-drag.dx,b:q.y-drag.dy}}else{const b=drag.p.boxes[drag.h.k];b.x=q.x-drag.dx;b.y=q.y-drag.dy}
     drawProduct(canvases[sel].cv,drag.p);drawStage()});
   const end=()=>{if(drag){drag=null;stage.style.cursor=''}};
   stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);
@@ -784,8 +794,8 @@ $('mvLw').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v
 
 /* ---------- light persistence (text settings only) ---------- */
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
-function persist(){try{const o={tpl:state.tpl,ly:lyLast,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw,mvW:state.mvW};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
-function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(k!=='coverTitle'&&typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.ly&&typeof d.ly==='object')Object.keys(lyLast).forEach(k=>{if(typeof d.ly[k]==='string')lyLast[k]=d.ly[k]});else if(d.txt==='center'){lyLast.layout='desc';lyLast.alignA='center'}['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw;if(typeof d.mvW==='number'&&d.mvW>=200&&d.mvW<=1080)state.mvW=d.mvW}}catch(e){}}
+function persist(){try{const o={tpl:state.tpl,bgLock:state.bgLock,ly:lyLast,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw,mvW:state.mvW};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){if(d.intro==='식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .')d.intro='';if(typeof d.sign==='string')d.sign=d.sign.replace(/(@moi\.collects)\s*🎾/,'$1');if(typeof d.bgLock==='boolean')state.bgLock=d.bgLock;KEYS.forEach(k=>{if(k!=='coverTitle'&&typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.ly&&typeof d.ly==='object')Object.keys(lyLast).forEach(k=>{if(typeof d.ly[k]==='string')lyLast[k]=d.ly[k]});else if(d.txt==='center'){lyLast.layout='desc';lyLast.alignA='center'}['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw;if(typeof d.mvW==='number'&&d.mvW>=200&&d.mvW<=1080)state.mvW=d.mvW}}catch(e){}}
 
 /* ---------- 임시저장 (IndexedDB, 여러 개) ---------- */
 function dbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('carousel-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
