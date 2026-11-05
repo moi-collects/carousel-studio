@@ -73,8 +73,9 @@ button.text:hover{color:var(--fg)}
 .sub-h{font-size:12px;font-weight:600;color:var(--fg);margin-top:4px}
 .stk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .unit{display:flex;align-items:center;gap:6px}.unit span{color:var(--muted);font-size:13px}.unit input{font-variant-numeric:tabular-nums}
-.cpick{display:flex;flex-direction:column;gap:4px}
-.cpick input[type=text]{padding:6px 8px;font-size:12.5px;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-transform:uppercase}
+.cpick{display:flex;flex-direction:row;align-items:center;gap:6px;min-width:0}
+.cpick input[type=color]{width:32px;height:32px;flex:none;padding:2px}
+.cpick input[type=text]{min-width:0;padding:6px 8px;font-size:12.5px;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-transform:uppercase}
 .chk{flex-direction:row;align-items:center;gap:6px}
 .rowbtn{display:flex;gap:4px;flex-wrap:wrap;justify-content:space-between}
 .tpls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -87,6 +88,21 @@ button.text:hover{color:var(--fg)}
 .bx .drop{padding:6px}.bx .drop .th{width:36px;height:36px}
 .bx4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .bx4 input[type=number]{padding:7px 6px;font-size:13px}
+.ptabs{display:flex;gap:0;margin:0 -10px 2px;padding:0 4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.ptabs button{border:0;border-radius:0;background:none;padding:10px 9px 9px;font-size:12.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.ptabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg);font-weight:600}
+.ptabs button i{font-style:normal;font-size:11px;color:var(--muted);margin-left:3px;font-variant-numeric:tabular-nums}
+.pane{display:flex;flex-direction:column;gap:10px}
+.pact{display:flex;gap:0;flex:none}
+.pact button{padding:4px 6px}
+.mini{font-size:11.5px;color:var(--muted);margin:-4px 0 0}
+details.tip>summary{list-style:none;cursor:pointer;font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+details.tip>summary::-webkit-details-marker{display:none}
+details.tip>summary::before{content:"?";display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);font-size:10px}
+details.tip p{margin:6px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6}
+.rowv{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.opt{font-size:11px;color:var(--muted);font-weight:400;margin-left:4px}
+.rowv b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
 .add{display:flex;gap:8px}
 .add button{flex:1}
 /* preview */
@@ -135,7 +151,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
         <summary>표지</summary>
         <div class="body">
           <div class="drop"><input type="file" id="coverFile" accept="image/*" aria-label="표지 사진 선택"><span class="th" id="coverTh"></span><span>표지 사진 올리기</span></div>
-          <p class="hint">사진 칸에 마우스를 올리고 Ctrl+V(맥은 ⌘V)로 복사한 이미지를 바로 붙여넣을 수 있어요.</p>
+          <p class="mini">사진 칸에 마우스를 올리고 Ctrl+V(⌘V)로 붙여넣을 수도 있어요.</p>
           <label>표지 문구<textarea id="coverTitle" rows="2"></textarea></label>
           <div class="two">
             <label>확대<input type="range" id="coverZoom" min="1" max="2.5" step="0.01" value="1"></label>
@@ -154,13 +170,12 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
           </div>
           <div id="bookRow" class="bxl" hidden>
             <span style="font-size:12px;color:var(--muted)">책 사진 박스 (모든 제품 공통)</span>
-            <div class="bx4">
+            <div class="stk">
               <label>가로 (px)<input type="number" id="bkW" min="100" max="1080" step="1" inputmode="numeric"></label>
               <label>세로 (px)<input type="number" id="bkH" min="100" max="1000" step="1" inputmode="numeric"></label>
               <label>선 두께 (px)<input type="number" id="bkLw" min="0" max="40" step="0.5" inputmode="decimal"></label>
-              <label>선 색<span class="cpick"><input type="color" id="bkLc" aria-label="선 색"></span></label>
             </div>
-            <label class="unit" style="flex-direction:row;gap:6px">선 색 HEX<input type="text" id="bkLcHex" maxlength="7" spellcheck="false" aria-label="선 색 HEX" style="width:96px;padding:6px 8px;font-size:12.5px;text-transform:uppercase"></label>
+            <label>선 색<span class="cpick"><input type="color" id="bkLc" aria-label="선 색"><input type="text" id="bkLcHex" maxlength="7" spellcheck="false" aria-label="선 색 HEX"></span></label>
           </div>
           <div id="mvRow" class="bxl" hidden>
             <span style="font-size:12px;color:var(--muted)">영화 코멘트 박스 (모든 제품 공통)</span>
@@ -171,7 +186,6 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
             </div>
             <div class="two"><label>박스 가로 (px)<input type="number" id="mvW" min="200" max="1080" step="1" inputmode="numeric"></label><label>선 두께 (px, 0이면 없음)<input type="number" id="mvLw" min="0" max="40" step="0.5" inputmode="decimal"></label></div>
           </div>
-          <p class="hint">표지는 모든 템플릿에서 똑같이 유지돼요.</p>
         </div>
       </details>
 
@@ -233,7 +247,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
 <script>
 const W=1080,H=1350,FONT='"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
 const $=id=>document.getElementById(id);
-let uid=0,openId=null,downloads=null;
+let uid=0,openId=null,downloads=null,ptab='info';
 const state={
   coverTitle:"표지 제목이\n노출됩니다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
   account:"moi.collects",bg:"#D6D7D9",tpl:"A",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,mvW:660,emoji:"🍽️",unit:"₩",
@@ -566,62 +580,84 @@ function renderList(){
   state.products.forEach((p,i)=>{
     const open=p.id===openId;
     const d=document.createElement('div');d.className='pitem'+(open?' open':'');d.dataset.id=p.id;
+    const T=state.tpl,isA=T==='A',isC=T==='C',isD=T==='D',nb=(p.boxes||[]).length,ns=p.stickers.split('\n').filter(l=>l.trim()).length;
+    const SPLIT='<option value="1">1장</option><option value="2">2분할 (위아래)</option><option value="4">4분할 (2×2)</option>';
+    const drop=(attr,img,label)=>`<div class="drop"><input type="file" accept="image/*" ${attr} aria-label="${label}"><span class="th" style="${img?`background-image:url(${img.src})`:''}"></span><span>${label}${img?' 바꾸기':' 올리기'}</span></div>`;
+    const ALIGN=`<option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option>`;
+    const TIP=`<details class="tip"><summary>글자 꾸미기</summary><p><b>**굵게**</b> · {글자|#E0442B} 색 · {글자|36pt} 크기 · {글자|b #E0442B 36pt} 함께<br>굵기: l 얇게 · r 보통 · m 중간 · b 굵게</p></details>`;
+    const tab=(k,t,n)=>`<button type="button" role="tab" data-act="tab" data-t="${k}" aria-selected="${ptab===k}">${t}${n?`<i>${n}</i>`:''}</button>`;
+    const info=isD?`
+        <div class="two"><label>영화 제목<input type="text" data-f="brand" id="b${p.id}"></label><label><span>개봉년도<span class="opt">선택</span></span><input type="text" data-f="year" id="y${p.id}" inputmode="numeric"></label></div>
+        <label>코멘트<textarea data-f="desc" id="d${p.id}" rows="5"></textarea></label>
+        <div class="two" style="align-items:end"><label>텍스트 정렬<select data-f="alignD" id="al${p.id}">${ALIGN}</select></label><button type="button" class="text" data-act="mvReset" style="justify-self:start">제목·박스 위치 초기화</button></div>
+        ${TIP}`:isC?`
+        <div class="two"><label>책 제목<input type="text" data-f="brand" id="b${p.id}"></label><label>출판사 계정<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
+        <div class="two"><label><span>글쓴이<span class="opt">선택</span></span><input type="text" data-f="name" id="n${p.id}"></label><label>텍스트 정렬<select data-f="alignC" id="al${p.id}">${ALIGN}</select></label></div>
+        <label>설명 문구<textarea data-f="desc" id="d${p.id}" rows="4"></textarea></label>
+        ${TIP}`:`
+        <div class="two"><label>브랜드<input type="text" data-f="brand" id="b${p.id}"></label><label>인스타 계정<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
+        <label>제품명<input type="text" data-f="name" id="n${p.id}"></label>
+        <div class="two"><label><span>컬러<span class="opt">선택</span></span><input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>
+        <label class="chk"><input type="checkbox" data-f="textOn" id="to${p.id}"> 하단 텍스트 표시</label>
+        ${p.textOn===false?'':`<div class="two"><label>하단 구성<select data-f="layout" id="ly${p.id}"><option value="price">가격줄</option><option value="desc">설명 문구</option></select></label><label>텍스트 정렬<select data-f="alignA" id="al${p.id}">${ALIGN}</select></label></div>
+        ${p.layout==='desc'?`<label><span class="rowv">설명 문구<span class="opt">최대 두 줄 · 비우면 제품명 | 가격</span></span><textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(plainRich(autoDesc(p)))}"></textarea></label>`:''}`}
+        ${TIP}`;
+    const bgPart=`
+        ${drop('data-pbg="1"',p.bg,'배경 사진')}
+        <label>배경 분할<select data-f="split" id="sp${p.id}">${SPLIT}</select></label>
+        ${[1,2,3].slice(0,(p.split||1)-1).map(k=>drop(`data-xbg="${k-1}"`,p.bgX[k-1],'배경 사진 '+(k+1))).join('')}
+        ${hasBg(p)?`<label><span class="rowv">배경 위 검정 박스<b class="dimv">${p.bgDim??50}%</b></span><input type="range" data-f="bgDim" id="bd${p.id}" min="0" max="100" step="1"></label><button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>`:''}`;
+    const fitPart=`
+        <label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기</option><option value="contain">배경색 위에 놓기 (누끼)</option></select></label>
+        <label><span class="rowv">사진 크기<b class="zmv">${Math.round((p.zoom||1)*100)}%</b></span><input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>`;
+    const photo=isD?bgPart+`<p class="mini">사진 위치는 미리보기에서 끌어서 옮겨요.</p>`:isC?`
+        ${drop('data-f="img"',p.img,'책 표지')}${fitPart}
+        <div class="sub-h" style="margin-top:6px">배경</div>${bgPart}
+        <p class="mini">사진 위치는 미리보기에서 끌어서 옮겨요.</p>`:`
+        ${drop('data-f="img"',p.img&&!p.sample?p.img:null,'제품 사진')}
+        <label>사진 분할<select data-f="split" id="sp${p.id}">${SPLIT}</select></label>
+        ${[1,2,3].slice(0,(p.split||1)-1).map(k=>drop(`data-ximg="${k-1}"`,p.imgX[k-1],'사진 '+(k+1))).join('')}
+        ${fitPart}
+        <p class="mini">사진 위치는 미리보기에서 끌어서 옮겨요.</p>`;
+    const boxes=`
+        ${(p.boxes||[]).map((b,j)=>`<div class="bx" data-b="${j}">
+          ${drop(`data-bimg="${j}"`,b.img,'박스 '+(j+1)+' 사진')}
+          <div class="two"><label>가로 (px)<input type="number" data-bf="w" min="40" max="1080" step="1" value="${b.w}" inputmode="numeric"></label><label>세로 (px)<input type="number" data-bf="h" min="40" max="1350" step="1" value="${b.h}" inputmode="numeric"></label></div>
+          <div class="two"><label>선 두께 (px)<input type="number" data-bf="lw" min="0" max="40" step="0.5" value="${b.lw}" inputmode="decimal"></label><label>선 색<span class="cpick"><input type="color" data-bf="lc" value="${b.lc.toLowerCase()}" aria-label="선 색"><input type="text" data-bhex="lc" maxlength="7" spellcheck="false" value="${b.lc.toUpperCase()}" aria-label="선 색 HEX"></span></label></div>
+          <label><span class="rowv">박스 안 사진 크기<b class="izv">${Math.round((b.iz??1)*100)}%</b></span><input type="range" data-bf="iz" min="0.1" max="2" step="0.01" value="${b.iz??1}"></label>
+          <div class="rowbtn"><button class="text" data-act="bxAll" data-j="${j}">선 스타일 전체 적용</button><button class="text" data-act="bxDel" data-j="${j}">삭제</button></div>
+        </div>`).join('')}
+        ${nb<4?'<button data-act="bxAdd">이미지 박스 추가</button>':''}
+        <p class="mini">최대 4개 · 미리보기에서 끌어서 옮겨요.</p>`;
+    const sticker=`
+        <label><span class="rowv">코멘트<span class="opt">줄마다 하나</span></span><textarea data-f="stickers" id="s${p.id}" rows="2"></textarea></label>
+        ${TIP}
+        <div class="two">
+          <label>박스 색<span class="cpick"><input type="color" data-f="stBg" id="sb${p.id}" aria-label="박스 색"><input type="text" data-hex="stBg" id="sbh${p.id}" maxlength="7" spellcheck="false" aria-label="박스 HEX"></span></label>
+          <label>글자 색<span class="cpick"><input type="color" data-f="stInk" id="si${p.id}" aria-label="글자 색"><input type="text" data-hex="stInk" id="sih${p.id}" maxlength="7" spellcheck="false" aria-label="글자 HEX"></span></label>
+        </div>
+        <div class="two">
+          <label>테두리 색<span class="cpick"><input type="color" data-f="stBorder" id="sr${p.id}" aria-label="테두리 색"><input type="text" data-hex="stBorder" id="srh${p.id}" maxlength="7" spellcheck="false" aria-label="테두리 HEX"></span></label>
+          <label>테두리 모양<select data-f="stLine" id="sl${p.id}"><option value="solid">실선</option><option value="dashed">점선</option><option value="dotted">원형 점선</option></select></label>
+        </div>
+        <div class="two" style="align-items:end">
+          <label>글자 크기 (pt)<input type="number" data-f="stSize" id="ss${p.id}" min="8" max="120" step="1" inputmode="numeric"></label>
+          <label class="chk" style="padding-bottom:9px"><input type="checkbox" data-f="stBorderOn" id="so${p.id}"> 테두리 표시</label>
+        </div>
+        <label><span class="rowv">박스 불투명도<b class="stopv">${p.stOpacity??100}%</b></span><input type="range" data-f="stOpacity" id="sop${p.id}" min="0" max="100" step="1"></label>
+        <div class="rowbtn"><button class="text" data-act="stAll">스타일 전체 적용</button><button class="text" data-act="stReset">위치 초기화</button></div>`;
     d.innerHTML=`<div class="phead" data-act="toggle" role="button" tabindex="0" aria-expanded="${open}">
         <span class="th" style="${thumb(p)}"></span>
-        <span class="tx"><b>${esc(p.brand||'새 제품')}</b><span>${state.tpl==='D'?esc(p.year?p.year+'년':'개봉년도 없음'):esc(plainRich(p.name)||'제품명 없음')+(fmtPrice(p.price)?' · '+fmtPrice(p.price):'')}</span></span>
+        <span class="tx"><b>${esc(p.brand||'새 제품')}</b><span>${isD?esc(p.year?p.year+'년':'개봉년도 없음'):esc(plainRich(p.name)||'제품명 없음')+(isA&&fmtPrice(p.price)?' · '+fmtPrice(p.price):'')}</span></span>
         ${p.sample?'<span class="tag">예시</span>':''}
+        ${open?`<span class="pact"><button class="text" data-act="up" aria-label="위로 이동">↑</button><button class="text" data-act="down" aria-label="아래로 이동">↓</button><button class="text" data-act="del">삭제</button></span>`:''}
       </div>
       <div class="pbody" ${open?'':'hidden'}>
-        ${state.tpl==='D'?'':`<div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="${state.tpl==='C'?'책 표지':'제품 사진'} 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${state.tpl==='C'?(p.img?'책 표지 바꾸기':'책 표지 올리기'):(p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기')}</span></div>`}
-        ${state.tpl==='A'?`<label>사진 분할<select data-f="split" id="sp${p.id}"><option value="1">1장</option><option value="2">2분할 (위아래)</option><option value="4">4분할 (2×2)</option></select></label>${[1,2,3].slice(0,(p.split||1)-1).map(i=>`<div class="drop"><input type="file" accept="image/*" data-ximg="${i-1}" aria-label="사진 ${i+1} 선택"><span class="th" style="${p.imgX[i-1]?`background-image:url(${p.imgX[i-1].src})`:''}"></span><span>${p.imgX[i-1]?'사진 '+(i+1)+' 바꾸기':'사진 '+(i+1)+' 올리기'}</span></div>`).join('')}`:''}
-        ${state.tpl==='C'||state.tpl==='D'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>
-        <label>배경 분할<select data-f="split" id="sp${p.id}"><option value="1">1장</option><option value="2">2분할 (위아래)</option><option value="4">4분할 (2×2)</option></select></label>${[1,2,3].slice(0,(p.split||1)-1).map(i=>`<div class="drop"><input type="file" accept="image/*" data-xbg="${i-1}" aria-label="배경 사진 ${i+1} 선택"><span class="th" style="${p.bgX[i-1]?`background-image:url(${p.bgX[i-1].src})`:''}"></span><span>${p.bgX[i-1]?'배경 사진 '+(i+1)+' 바꾸기':'배경 사진 '+(i+1)+' 올리기'}</span></div>`).join('')}
-        ${hasBg(p)?`<label>배경 위 검정 박스 불투명도 <b class="dimv" style="color:var(--fg);font-weight:600">${p.bgDim??50}%</b><input type="range" data-f="bgDim" id="bd${p.id}" min="0" max="100" step="1"></label><button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>`:''}`:''}
-        ${state.tpl==='D'?`<div class="two"><label>영화 제목<input type="text" data-f="brand" id="b${p.id}"></label><label>개봉년도 (선택)<input type="text" data-f="year" id="y${p.id}" inputmode="numeric" placeholder="1995"></label></div>
-        <label>코멘트 (박스 안 자동 줄바꿈 · 길이에 따라 박스가 위로 늘어남)<textarea data-f="desc" id="d${p.id}" rows="5"></textarea></label>
-        <button type="button" class="text" data-act="mvReset" style="align-self:flex-start">제목·박스 위치 초기화</button>`:`<div class="two"><label>${state.tpl==='C'?'책 제목':'브랜드'}<input type="text" data-f="brand" id="b${p.id}"></label><label>${state.tpl==='C'?'출판사 계정':'인스타 계정'}<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
-        <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>`}
-        ${state.tpl==='C'||state.tpl==='D'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
-        ${state.tpl==='C'?`<label>설명 문구 (줄바꿈 그대로 · 길면 자동 줄바꿈)<textarea data-f="desc" id="d${p.id}" rows="4"></textarea></label>`:''}
-        ${state.tpl==='A'?`<label class="chk"><input type="checkbox" data-f="textOn" id="to${p.id}"> 하단 텍스트 표시</label>`:''}
-        ${state.tpl==='A'&&p.textOn===false?'':state.tpl==='A'?`<div class="two"><label>하단 구성<select data-f="layout" id="ly${p.id}"><option value="price">가격줄 (제품명 · 가격)</option><option value="desc">설명 문구</option></select></label><label>텍스트 정렬<select data-f="alignA" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label></div>`:`<label>텍스트 정렬<select data-f="align${state.tpl}" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label>`}
-        <p class="hint">글자 일부 꾸미기: <b>**굵게**</b> · {글자|#E0442B} 색 · {글자|36pt} 크기 · {글자|b #E0442B 36pt} 함께 (굵기 l 얇게 · r 보통 · m 중간 · b 굵게)</p>
-        ${state.tpl==='A'&&p.textOn!==false&&p.layout==='desc'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(plainRich(autoDesc(p)))}"></textarea></label>`:''}
-        ${state.tpl==='D'?'':`<label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
-        <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
-        <p class="hint">사진 위치는 미리보기에서 사진을 끌어서 옮겨요.</p>`}
-        ${true?`<div class="sub-h">이미지 박스 <span class="hint" style="font-weight:400">(최대 4개 · 미리보기에서 끌어서 위치 조정)</span></div>
-        <div class="bxl">${(p.boxes||[]).map((b,j)=>`<div class="bx" data-b="${j}">
-          <div class="drop"><input type="file" accept="image/*" data-bimg="${j}" aria-label="이미지 박스 ${j+1} 사진 선택"><span class="th" style="${b.img?`background-image:url(${b.img.src})`:''}"></span><span>${b.img?'박스 '+(j+1)+' 사진 바꾸기':'박스 '+(j+1)+' 사진 올리기'}</span></div>
-          <div class="bx4">
-            <label>가로 (px)<input type="number" data-bf="w" min="40" max="1080" step="1" value="${b.w}" inputmode="numeric"></label>
-            <label>세로 (px)<input type="number" data-bf="h" min="40" max="1350" step="1" value="${b.h}" inputmode="numeric"></label>
-            <label>선 두께 (px)<input type="number" data-bf="lw" min="0" max="40" step="0.5" value="${b.lw}" inputmode="decimal"></label>
-            <label>선 색<span class="cpick"><input type="color" data-bf="lc" value="${b.lc.toLowerCase()}" aria-label="선 색"></span></label>
-          </div>
-          <label>박스 안 사진 크기 <b class="izv" style="color:var(--fg);font-weight:600">${Math.round((b.iz??1)*100)}%</b><input type="range" data-bf="iz" min="0.1" max="2" step="0.01" value="${b.iz??1}"></label>
-          <div class="rowbtn"><label class="unit" style="flex-direction:row;gap:6px">HEX<input type="text" data-bhex="lc" maxlength="7" spellcheck="false" value="${b.lc.toUpperCase()}" aria-label="선 색 HEX" style="width:96px;padding:6px 8px;font-size:12.5px;text-transform:uppercase"></label><span><button class="text" data-act="bxAll" data-j="${j}">선 스타일 전체 적용</button><button class="text" data-act="bxDel" data-j="${j}">박스 삭제</button></span></div>
-        </div>`).join('')}</div>
-        ${(p.boxes||[]).length<4?'<button data-act="bxAdd">이미지 박스 추가</button>':''}`:''}
-        <div class="sub-h">스티커</div>
-        <label>코멘트 (줄마다 하나 · 미리보기에서 끌어서 위치 조정 · **굵게** 등 꾸미기 가능)<textarea data-f="stickers" id="s${p.id}" rows="2"></textarea></label>
-        <div class="stk">
-          <label>박스<span class="cpick"><input type="color" data-f="stBg" id="sb${p.id}" aria-label="박스 색"><input type="text" data-hex="stBg" id="sbh${p.id}" maxlength="7" spellcheck="false" aria-label="박스 HEX"></span></label>
-          <label>글자<span class="cpick"><input type="color" data-f="stInk" id="si${p.id}" aria-label="글자 색"><input type="text" data-hex="stInk" id="sih${p.id}" maxlength="7" spellcheck="false" aria-label="글자 HEX"></span></label>
-          <label>테두리<span class="cpick"><input type="color" data-f="stBorder" id="sr${p.id}" aria-label="테두리 색"><input type="text" data-hex="stBorder" id="srh${p.id}" maxlength="7" spellcheck="false" aria-label="테두리 HEX"></span></label>
-        </div>
-        <div class="two" style="align-items:end">
-          <label>글자 크기 (pt)<span class="unit"><input type="number" data-f="stSize" id="ss${p.id}" min="8" max="120" step="1" inputmode="numeric"><span>pt</span></span></label>
-          <label class="chk"><input type="checkbox" data-f="stBorderOn" id="so${p.id}"> 테두리 표시</label>
-        </div>
-        <div class="two" style="align-items:end">
-          <label>테두리 모양<select data-f="stLine" id="sl${p.id}"><option value="solid">실선</option><option value="dashed">점선</option><option value="dotted">원형 점선</option></select></label>
-          <label>박스 불투명도 <b class="stopv" style="color:var(--fg);font-weight:600">${p.stOpacity??100}%</b><input type="range" data-f="stOpacity" id="sop${p.id}" min="0" max="100" step="1"></label>
-        </div>
-        <div class="rowbtn">
-          <span><button class="text" data-act="stAll">스티커 스타일 전체 적용</button><button class="text" data-act="stReset">위치 초기화</button></span>
-          <span><button class="text" data-act="up" aria-label="위로 이동">↑</button><button class="text" data-act="down" aria-label="아래로 이동">↓</button><button class="text" data-act="del">삭제</button></span>
-        </div>
+        <div class="ptabs" role="tablist">${tab('info','정보')}${tab('photo','사진')}${tab('box','이미지 박스',nb)}${tab('sticker','스티커',ns)}</div>
+        <div class="pane" data-pane="info" ${ptab==='info'?'':'hidden'}>${info}</div>
+        <div class="pane" data-pane="photo" ${ptab==='photo'?'':'hidden'}>${photo}</div>
+        <div class="pane" data-pane="box" ${ptab==='box'?'':'hidden'}>${boxes}</div>
+        <div class="pane" data-pane="sticker" ${ptab==='sticker'?'':'hidden'}>${sticker}</div>
       </div>`;
     d.querySelectorAll('[data-f]').forEach(el=>{const f=el.dataset.f;if(f==='img')return;if(el.type==='checkbox')el.checked=!!p[f];else el.value=p[f]});
     d.querySelectorAll('[data-hex]').forEach(el=>el.value=String(p[el.dataset.hex]).toUpperCase());
@@ -655,6 +691,8 @@ function onListInput(e){
   if(e.target.type==='range')p[f]=parseFloat(e.target.value);
   if(f==='bgDim'){const v=card.querySelector('.dimv');if(v)v.textContent=p[f]+'%'}
   if(f==='stOpacity'){const v=card.querySelector('.stopv');if(v)v.textContent=p[f]+'%'}
+  if(f==='zoom'){const v=card.querySelector('.zmv');if(v)v.textContent=Math.round(p[f]*100)+'%'}
+  if(f==='stickers'){const t=card.querySelector('[data-t="sticker"]');if(t){const n=p.stickers.split('\n').filter(l=>l.trim()).length;t.innerHTML='스티커'+(n?`<i>${n}</i>`:'')}}
   else if(e.target.type==='number'){const v=parseFloat(e.target.value);if(!(v>=8&&v<=120))return;p[f]=v}
   else if(e.target.type==='checkbox')p[f]=e.target.checked;
   else p[f]=e.target.value;
@@ -680,6 +718,7 @@ L.addEventListener('change',e=>{
 function act(e){
   const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   const card=el.closest('.pitem');const i=state.products.findIndex(q=>q.id==card.dataset.id);const p=state.products[i];
+  if(a==='tab'){ptab=el.dataset.t;card.querySelectorAll('[data-pane]').forEach(x=>x.hidden=x.dataset.pane!==ptab);card.querySelectorAll('[data-act="tab"]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.t===ptab)));return}
   if(a==='toggle'){openId=openId===p.id?null:p.id;if(openId)sel=i+1;renderList();markActive();drawStage();return}
   if(a==='stAll'){state.products.forEach(q=>Object.keys(stDefault).forEach(k=>q[k]=p[k]));Object.assign(stLast,...Object.keys(stDefault).map(k=>({[k]:p[k]})));schedule();toast('모든 제품에 적용했어요');return}
   if(a==='stReset'){p.stPos=[];schedule();return}
