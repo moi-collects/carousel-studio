@@ -423,12 +423,14 @@ function textBlockCenter(x,p,col,al='center'){
   x.fillStyle=col;x.textAlign=al;x.fillText(brand,cx,top-(lines.length?50:0)-(x.measureText(brand).actualBoundingBoxDescent||0));
   x.textAlign='left';resetType(x);
 }
-function bookTitle(x,p,col){
+function bookTitle(x,p,col,boxTop=385){
   const title=p.brand||'책 제목',author=(p.name||'').trim();
   let s=40;const fit=()=>{setType(x,700,s,-10);const a=x.measureText(title).width;if(!author)return a;setType(x,300,s,-20);const bar=x.measureText('|').width;setType(x,400,s,-20);return a+20+bar+22+x.measureText(author).width};
   while(fit()>W-200&&s>28)s-=1;
   const total=fit(),al=p.alignC||'center';let X=al==='left'?100:al==='right'?W-100-total:(W-total)/2;
-  setType(x,700,s,-10);const asc=x.measureText(title).actualBoundingBoxAscent||s*.8,base=245+asc;
+  setType(x,700,s,-10);let dsc=x.measureText(title).actualBoundingBoxDescent||0;
+  if(author){setType(x,300,s,-20);dsc=Math.max(dsc,x.measureText('|').actualBoundingBoxDescent||0);setType(x,400,s,-20);dsc=Math.max(dsc,x.measureText(author).actualBoundingBoxDescent||0)}
+  const base=boxTop-100-dsc;setType(x,700,s,-10);
   x.fillStyle=col;x.textAlign='left';x.fillText(title,X,base);X+=x.measureText(title).width+20;
   if(author){setType(x,300,s,-20);x.fillText('|',X,base);X+=x.measureText('|').width+22;setType(x,400,s,-20);x.fillText(author,X,base)}
   resetType(x);
@@ -536,7 +538,7 @@ function drawProduct(cv,p){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
     drawBgTiles(x,p);
     drawAccount(x,'rgba(255,255,255,.8)');
-    bookTitle(x,p,'#fff');
+    bookTitle(x,p,'#fff',385);
     const bw=state.bkW,bh=state.bkH,bx=Math.round((W-bw)/2),by=385;
     if(p.img){placeImg(x,p,bx,by,bw,bh,p.fit);addHit(p,'cover',0,[bx,by,bw,bh],p.img,p.zoom,p.fit==='contain'?'contain':'cover')}else{x.fillStyle='rgba(255,255,255,.15)';x.fillRect(bx,by,bw,bh);placeholder(x,bx,by,bw,bh,'rgba(255,255,255,.85)')}
     if(state.bkLw>0){x.strokeStyle=state.bkLc;x.lineWidth=state.bkLw;x.strokeRect(bx+state.bkLw/2,by+state.bkLw/2,bw-state.bkLw,bh-state.bkLw)}
