@@ -425,7 +425,7 @@ function textBlockCenter(x,p,col,al='center'){
 }
 function bookTitle(x,p,col){
   const title=p.brand||'책 제목',author=(p.name||'').trim();
-  let s=50;const fit=()=>{setType(x,700,s,-10);const a=x.measureText(title).width;if(!author)return a;setType(x,300,s,-20);const bar=x.measureText('|').width;setType(x,400,s,-20);return a+20+bar+22+x.measureText(author).width};
+  let s=40;const fit=()=>{setType(x,700,s,-10);const a=x.measureText(title).width;if(!author)return a;setType(x,300,s,-20);const bar=x.measureText('|').width;setType(x,400,s,-20);return a+20+bar+22+x.measureText(author).width};
   while(fit()>W-200&&s>28)s-=1;
   const total=fit(),al=p.alignC||'center';let X=al==='left'?100:al==='right'?W-100-total:(W-total)/2;
   setType(x,700,s,-10);const asc=x.measureText(title).actualBoundingBoxAscent||s*.8,base=245+asc;
