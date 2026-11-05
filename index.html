@@ -232,7 +232,7 @@ const state={
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22};
 let stLast=Object.assign({},stDefault);
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,sample:false},stLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,sample:false},stLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -411,7 +411,7 @@ function drawProduct(cv,p){
   }
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
-    if(p.bg){const img=p.bg,sc=Math.max(W/img.width,H/img.height),dw=img.width*sc,dh=img.height*sc;x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh)}
+    if(p.bg){const img=p.bg,sc=Math.max(W/img.width,H/img.height),dw=img.width*sc,dh=img.height*sc;x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);x.fillStyle=`rgba(0,0,0,${(p.bgDim??50)/100})`;x.fillRect(0,0,W,H)}
     drawAccount(x,'rgba(255,255,255,.8)');
     bookTitle(x,p,'#fff');
     const bw=state.bkW,bh=state.bkH,bx=Math.round((W-bw)/2),by=385;
@@ -467,7 +467,7 @@ function renderList(){
       </div>
       <div class="pbody" ${open?'':'hidden'}>
         <div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="${state.tpl==='C'?'책 표지':'제품 사진'} 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${state.tpl==='C'?(p.img?'책 표지 바꾸기':'책 표지 올리기'):(p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기')}</span></div>
-        ${state.tpl==='C'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>${p.bg?'<button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>':''}`:''}
+        ${state.tpl==='C'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>${p.bg?`<label>배경 위 검정 박스 불투명도 <b class="dimv" style="color:var(--fg);font-weight:600">${p.bgDim??50}%</b><input type="range" data-f="bgDim" id="bd${p.id}" min="0" max="100" step="1"></label><button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>`:''}`:''}
         <div class="two"><label>${state.tpl==='C'?'책 제목':'브랜드'}<input type="text" data-f="brand" id="b${p.id}"></label><label>${state.tpl==='C'?'출판사 계정':'인스타 계정'}<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
         <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>
         ${state.tpl==='C'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
@@ -533,6 +533,7 @@ function onListInput(e){
   const f=e.target.dataset.f;if(!f||f==='img')return;
   if(e.target.type==='color'){const h=card.querySelector(`[data-hex="${f}"]`);if(h)h.value=e.target.value.toUpperCase()}
   if(e.target.type==='range')p[f]=parseFloat(e.target.value);
+  if(f==='bgDim'){const v=card.querySelector('.dimv');if(v)v.textContent=p[f]+'%'}
   else if(e.target.type==='number'){const v=parseFloat(e.target.value);if(!(v>=8&&v<=120))return;p[f]=v}
   else if(e.target.type==='checkbox')p[f]=e.target.checked;
   else p[f]=e.target.value;
