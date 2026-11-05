@@ -143,6 +143,13 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
             <button class="tpl" data-tpl="C"><b>C · 스크랩</b><span>폴라로이드에 테이프, 키치한 무드</span></button>
             <button class="tpl" data-tpl="D"><b>D · 태그</b><span>사진 가득, 하단 가격표 라벨</span></button>
           </div>
+          <div id="txtRow" style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--muted)">하단 텍스트 (A·B)</span>
+            <div class="seg" role="group" aria-label="하단 텍스트 방식" style="align-self:flex-start">
+              <button type="button" data-txt="left" aria-pressed="true">기본 · 왼쪽</button>
+              <button type="button" data-txt="center" aria-pressed="false">가운데 정렬</button>
+            </div>
+          </div>
           <p class="hint">표지는 모든 템플릿에서 똑같이 유지돼요.</p>
         </div>
       </details>
@@ -208,14 +215,14 @@ const $=id=>document.getElementById(id);
 let uid=0,openId=null,downloads=null;
 const state={
   coverTitle:"올 여름,\n자꾸 생각나는 그릇이 생겼다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
-  account:"moi.collects",bg:"#D6D7D9",tpl:"A",emoji:"🍽️",unit:"₩",
+  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",emoji:"🍽️",unit:"₩",
   intro:"식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .",
   sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects 🎾",products:[]
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22};
 let stLast=Object.assign({},stDefault);
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],sample:false},stLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',sample:false},stLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -296,6 +303,44 @@ function textBlock(x,p,col){
   x.fillText(brand,L,top2-24-(x.measureText(brand).actualBoundingBoxDescent||0));
   resetType(x);
 }
+function autoDesc(p){const pr=fmtPrice(p.price);return[[p.name||'제품명',p.color&&p.color.trim()].filter(Boolean).join(' / '),pr].filter(Boolean).join(' | ')}
+function wrapLines(x,text,maxW,maxN){
+  const out=[];
+  for(const para of text.split('\n')){
+    let cur='';
+    for(const tok of para.split(/(\s+)/)){
+      if(!tok)continue;
+      const tryS=cur+tok;
+      if(x.measureText(tryS).width<=maxW||!cur.trim()){
+        if(x.measureText(tryS).width<=maxW){cur=tryS;continue}
+        for(const ch of tok){if(x.measureText(cur+ch).width>maxW&&cur){out.push(cur);cur=ch.trim()?ch:''}else cur+=ch}
+      }else{out.push(cur.trimEnd());cur=tok.trim()?tok:''}
+      if(x.measureText(cur).width>maxW){let t='';for(const ch of cur){if(x.measureText(t+ch).width>maxW&&t){out.push(t);t=ch}else t+=ch}cur=t}
+    }
+    out.push(cur.trimEnd());
+  }
+  const lines=out.filter((l,i)=>l.trim()||i===0);
+  if(lines.length>maxN){const keep=lines.slice(0,maxN);let last=keep[maxN-1];while(last&&x.measureText(last+'…').width>maxW)last=last.slice(0,-1);keep[maxN-1]=last.trimEnd()+'…';return keep}
+  return lines;
+}
+function textBlockCenter(x,p,col){
+  const L=100,R=W-100,cx=W/2;x.fillStyle=col;x.textAlign='center';
+  const desc=(p.desc&&p.desc.trim())?p.desc.trim():autoDesc(p);
+  setType(x,400,26,-20);
+  const lines=wrapLines(x,desc,R-L,2).filter(l=>l.trim());
+  let top=H-100;
+  if(lines.length){
+    const lh=44,last=lines[lines.length-1];
+    const lastBase=H-100-(x.measureText(last).actualBoundingBoxDescent||0);
+    const firstBase=lastBase-(lines.length-1)*lh;
+    lines.forEach((l,i)=>x.fillText(l,cx,firstBase+i*lh));
+    top=firstBase-Math.max(...lines.slice(0,1).map(l=>x.measureText(l).actualBoundingBoxAscent||20));
+  }
+  const brand=p.brand||'브랜드';let s1=50;setType(x,700,s1,-10);
+  while(x.measureText(brand).width>R-L&&s1>30){s1-=1;setType(x,700,s1,-10)}
+  x.fillText(brand,cx,top-(lines.length?55:0)-(x.measureText(brand).actualBoundingBoxDescent||0));
+  x.textAlign='left';resetType(x);
+}
 function drawStickers(x,p){
   const st=p.stickers.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,6);
   const fs=p.stSize;resetType(x);x.font=`500 ${fs}px ${FONT}`;p._rects=[];
@@ -332,7 +377,7 @@ function drawProduct(cv,p){
     else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)');
     if(t==='B')drawBoxes(x,p);
     drawStickers(x,p);
-    x.shadowColor='rgba(0,0,0,.22)';x.shadowBlur=10;textBlock(x,p,'#fff');x.shadowBlur=0;
+    x.shadowColor='rgba(0,0,0,.22)';x.shadowBlur=10;if(state.txt==='center')textBlockCenter(x,p,'#fff');else textBlock(x,p,'#fff');x.shadowBlur=0;
   }
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
@@ -399,6 +444,7 @@ function renderList(){
         <div class="two"><label>브랜드<input type="text" data-f="brand" id="b${p.id}"></label><label>인스타 계정<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
         <label>제품명<input type="text" data-f="name" id="n${p.id}"></label>
         <div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>
+        ${(state.tpl==='A'||state.tpl==='B')&&state.txt==='center'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(autoDesc(p))}"></textarea></label>`:''}
         <label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
         <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
         <div class="two"><label>가로 위치<input type="range" data-f="offX" id="ox${p.id}" min="-1" max="1" step="0.01"></label><label>세로 위치<input type="range" data-f="offY" id="o${p.id}" min="-1" max="1" step="0.01"></label></div>
@@ -464,6 +510,7 @@ function onListInput(e){
   else p[f]=e.target.value;
   if(f in stDefault)stLast[f]=p[f];
   if(['brand','name','price'].includes(f))refreshHead(p);
+  if(['name','color','price'].includes(f)){const d=$('d'+p.id);if(d)d.placeholder=autoDesc(p)}
   schedule();
 }
 L.addEventListener('change',e=>{
@@ -573,13 +620,15 @@ let t0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on'
 
 /* ---------- templates ---------- */
 const TPLN={A:'A · 기본',B:'B · 이미지 박스',C:'C · 스크랩',D:'D · 태그'};
-function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||''}
+function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||'';if(typeof markTxt==='function')markTxt()}
 document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{state.tpl=b.dataset.tpl;markTpl();renderList();schedule()}));
+function markTxt(){document.querySelectorAll('[data-txt]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.txt===state.txt)));$('txtRow').hidden=!(state.tpl==='A'||state.tpl==='B')}
+document.querySelectorAll('[data-txt]').forEach(b=>b.addEventListener('click',()=>{state.txt=b.dataset.txt;markTxt();renderList();schedule()}));
 
 /* ---------- light persistence (text settings only) ---------- */
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
-function persist(){try{const o={tpl:state.tpl};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
-function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl}}catch(e){}}
+function persist(){try{const o={tpl:state.tpl,txt:state.txt};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.txt==='left'||d.txt==='center')state.txt=d.txt}}catch(e){}}
 
 /* ---------- boot ---------- */
 (async()=>{
