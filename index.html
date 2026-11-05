@@ -338,7 +338,7 @@ function textBlockCenter(x,p,col){
   }
   const brand=p.brand||'브랜드';let s1=50;setType(x,700,s1,-10);
   while(x.measureText(brand).width>R-L&&s1>30){s1-=1;setType(x,700,s1,-10)}
-  x.fillText(brand,cx,top-(lines.length?55:0)-(x.measureText(brand).actualBoundingBoxDescent||0));
+  x.fillText(brand,cx,top-(lines.length?50:0)-(x.measureText(brand).actualBoundingBoxDescent||0));
   x.textAlign='left';resetType(x);
 }
 function drawStickers(x,p){
