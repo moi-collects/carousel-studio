@@ -167,7 +167,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
               <label>글자<span class="cpick"><input type="color" data-mv="mvInk" aria-label="글자 색"><input type="text" data-mvhex="mvInk" maxlength="7" spellcheck="false" aria-label="글자 HEX"></span></label>
               <label>선<span class="cpick"><input type="color" data-mv="mvLc" aria-label="선 색"><input type="text" data-mvhex="mvLc" maxlength="7" spellcheck="false" aria-label="선 HEX"></span></label>
             </div>
-            <label style="max-width:50%">선 두께 (px, 0이면 없음)<input type="number" id="mvLw" min="0" max="40" step="0.5" inputmode="decimal"></label>
+            <div class="two"><label>박스 가로 (px)<input type="number" id="mvW" min="200" max="1080" step="1" inputmode="numeric"></label><label>선 두께 (px, 0이면 없음)<input type="number" id="mvLw" min="0" max="40" step="0.5" inputmode="decimal"></label></div>
           </div>
           <p class="hint">표지는 모든 템플릿에서 똑같이 유지돼요.</p>
         </div>
@@ -234,7 +234,7 @@ const $=id=>document.getElementById(id);
 let uid=0,openId=null,downloads=null;
 const state={
   coverTitle:"올 여름,\n자꾸 생각나는 그릇이 생겼다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
-  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,emoji:"🍽️",unit:"₩",
+  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,mvW:660,emoji:"🍽️",unit:"₩",
   intro:"식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .",
   sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects 🎾",products:[]
 };
@@ -384,7 +384,7 @@ const MV={w:660,pad:40,gap:50,lh:37};
 function wrapChars(x,text,maxW){const out=[];for(const para of text.split('\n')){let cur='';for(const ch of para){if(!cur&&ch===' ')continue;if(x.measureText(cur+ch).width>maxW&&cur){out.push(cur.trimEnd());cur=ch===' '?'':ch}else cur+=ch}out.push(cur.trimEnd())}return out}
 function drawMovie(x,p){
   if(!p.mv)p.mv={x:100,b:H-100};
-  const bw=MV.w,inner=bw-MV.pad*2;
+  const bw=state.mvW||MV.w,inner=bw-MV.pad*2;
   // comment lines
   setType(x,500,24,-20);
   const ref=x.measureText('가'),asc=ref.actualBoundingBoxAscent||18,dsc=ref.actualBoundingBoxDescent||4;
@@ -702,17 +702,18 @@ function markBook(){const on=state.tpl==='C';$('bookRow').hidden=!on;$('bkW').va
 [['bkW',100,1080],['bkH',100,1000],['bkLw',0,40]].forEach(([k,a,b])=>$(k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=a&&v<=b))return;state[k]=v;schedule()}));
 $('bkLc').addEventListener('input',e=>{state.bkLc=e.target.value.toUpperCase();$('bkLcHex').value=state.bkLc;schedule()});
 $('bkLcHex').addEventListener('input',e=>{const v=normHex(e.target.value);if(!v)return;state.bkLc=v;$('bkLc').value=v.toLowerCase();schedule()});
-function markMv(){$('mvRow').hidden=state.tpl!=='D';document.querySelectorAll('[data-mv]').forEach(el=>el.value=state[el.dataset.mv].toLowerCase());document.querySelectorAll('[data-mvhex]').forEach(el=>el.value=state[el.dataset.mvhex].toUpperCase());$('mvLw').value=state.mvLw}
+function markMv(){$('mvRow').hidden=state.tpl!=='D';document.querySelectorAll('[data-mv]').forEach(el=>el.value=state[el.dataset.mv].toLowerCase());document.querySelectorAll('[data-mvhex]').forEach(el=>el.value=state[el.dataset.mvhex].toUpperCase());$('mvLw').value=state.mvLw;$('mvW').value=state.mvW}
 document.querySelectorAll('[data-mv]').forEach(el=>el.addEventListener('input',e=>{const k=el.dataset.mv;state[k]=e.target.value.toUpperCase();document.querySelector(`[data-mvhex="${k}"]`).value=state[k];schedule()}));
 document.querySelectorAll('[data-mvhex]').forEach(el=>el.addEventListener('input',e=>{const k=el.dataset.mvhex,v=normHex(e.target.value);if(!v)return;state[k]=v;document.querySelector(`[data-mv="${k}"]`).value=v.toLowerCase();schedule()}));
+$('mvW').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=200&&v<=1080))return;state.mvW=Math.round(v);schedule()});
 $('mvLw').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=0&&v<=40))return;state.mvLw=v;schedule()});
 function markTxt(){document.querySelectorAll('[data-txt]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.txt===state.txt)));$('txtRow').hidden=!(state.tpl==='A'||state.tpl==='B')}
 document.querySelectorAll('[data-txt]').forEach(b=>b.addEventListener('click',()=>{state.txt=b.dataset.txt;markTxt();renderList();schedule()}));
 
 /* ---------- light persistence (text settings only) ---------- */
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
-function persist(){try{const o={tpl:state.tpl,txt:state.txt,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
-function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.txt==='left'||d.txt==='center')state.txt=d.txt;['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw}}catch(e){}}
+function persist(){try{const o={tpl:state.tpl,txt:state.txt,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw,mvW:state.mvW};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.txt==='left'||d.txt==='center')state.txt=d.txt;['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw;if(typeof d.mvW==='number'&&d.mvW>=200&&d.mvW<=1080)state.mvW=d.mvW}}catch(e){}}
 
 /* ---------- boot ---------- */
 (async()=>{
