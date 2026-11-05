@@ -244,7 +244,7 @@ const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:tr
 let stLast=Object.assign({},stDefault);
 const lyLast={layout:'price',alignA:'left',alignC:'center',alignD:'left'};
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,year:'',mv:null,split:1,imgX:[null,null,null],bgX:[null,null,null],offs:[null,null,null,null],bgOff:[null,null,null,null],sample:false},stLast,lyLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,year:'',mv:null,split:1,imgX:[null,null,null],bgX:[null,null,null],offs:[null,null,null,null],bgOff:[null,null,null,null],textOn:true,sample:false},stLast,lyLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -507,13 +507,13 @@ function drawProduct(cv,p){
     drawAccount(x,'rgba(255,255,255,.8)');
     const nA=p.split||1;
     if(nA>1){const imgs=[p.img,...(p.imgX||[])].slice(0,nA);let any=false;tileRects(nA).forEach((r,i)=>{if(imgs[i]){const o=i===0?{x:p.offX,y:p.offY}:((p.offs||[])[i]||{x:0,y:0});coverDraw(x,imgs[i],r,p.zoom,o.x,o.y);addHit(p,'A',i,r,imgs[i],p.zoom);any=true}});
-      if(any){const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)')}
-    else if(p.img&&p.fit==='cover'){placeImg(x,p,0,0,W,H,'cover');addHit(p,'A',0,[0,0,W,H],p.img,p.zoom);const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}
+      if(any){if(p.textOn!==false){const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}}else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)')}
+    else if(p.img&&p.fit==='cover'){placeImg(x,p,0,0,W,H,'cover');addHit(p,'A',0,[0,0,W,H],p.img,p.zoom);if(p.textOn!==false){const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}}
     else if(p.img){const box=840*p.zoom,s=Math.min(box/p.img.width,box/p.img.height),dw=p.img.width*s,dh=p.img.height*s;x.drawImage(p.img,(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh);addHit(p,'Ac',0,[(W-dw)/2+p.offX*400,640-dh/2+p.offY*400,dw,dh],p.img,1,'contain400')}
     else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)');
     drawBoxes(x,p);
     drawStickers(x,p);
-    x.shadowColor='rgba(0,0,0,.22)';x.shadowBlur=10;if(p.layout==='desc')textBlockCenter(x,p,'#fff',p.alignA||'left');else textBlock(x,p,'#fff',p.alignA||'left');x.shadowBlur=0;
+    if(p.textOn!==false){x.shadowColor='rgba(0,0,0,.22)';x.shadowBlur=10;if(p.layout==='desc')textBlockCenter(x,p,'#fff',p.alignA||'left');else textBlock(x,p,'#fff',p.alignA||'left');x.shadowBlur=0;}
   }
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
@@ -583,9 +583,10 @@ function renderList(){
         <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>`}
         ${state.tpl==='C'||state.tpl==='D'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
         ${state.tpl==='C'?`<label>설명 문구 (줄바꿈 그대로 · 길면 자동 줄바꿈)<textarea data-f="desc" id="d${p.id}" rows="4"></textarea></label>`:''}
-        ${state.tpl==='A'?`<div class="two"><label>하단 구성<select data-f="layout" id="ly${p.id}"><option value="price">가격줄 (제품명 · 가격)</option><option value="desc">설명 문구</option></select></label><label>텍스트 정렬<select data-f="alignA" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label></div>`:`<label>텍스트 정렬<select data-f="align${state.tpl}" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label>`}
+        ${state.tpl==='A'?`<label class="chk"><input type="checkbox" data-f="textOn" id="to${p.id}"> 하단 텍스트 표시</label>`:''}
+        ${state.tpl==='A'&&p.textOn===false?'':state.tpl==='A'?`<div class="two"><label>하단 구성<select data-f="layout" id="ly${p.id}"><option value="price">가격줄 (제품명 · 가격)</option><option value="desc">설명 문구</option></select></label><label>텍스트 정렬<select data-f="alignA" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label></div>`:`<label>텍스트 정렬<select data-f="align${state.tpl}" id="al${p.id}"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></label>`}
         <p class="hint">글자 일부 꾸미기: <b>**굵게**</b> · {글자|#E0442B} 색 · {글자|36pt} 크기 · {글자|b #E0442B 36pt} 함께 (굵기 l 얇게 · r 보통 · m 중간 · b 굵게)</p>
-        ${state.tpl==='A'&&p.layout==='desc'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(plainRich(autoDesc(p)))}"></textarea></label>`:''}
+        ${state.tpl==='A'&&p.textOn!==false&&p.layout==='desc'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(plainRich(autoDesc(p)))}"></textarea></label>`:''}
         ${state.tpl==='D'?'':`<label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
         <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
         <p class="hint">사진 위치는 미리보기에서 사진을 끌어서 옮겨요.</p>`}
@@ -656,6 +657,7 @@ function onListInput(e){
   else if(e.target.type==='checkbox')p[f]=e.target.checked;
   else p[f]=e.target.value;
   if(f in stDefault)stLast[f]=p[f];
+  if(f==='textOn'){renderList();schedule();return}
   if(f==='split'){p.split=+p.split||1;renderList();schedule();return}
   if(f in lyLast){lyLast[f]=p[f];persist();if(f==='layout'){renderList();schedule();return}}
   if(['brand','name','price','year'].includes(f))refreshHead(p);
