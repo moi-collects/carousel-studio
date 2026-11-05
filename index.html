@@ -491,7 +491,7 @@ function drawBoxes(x,p){
   p._boxRects=[];
   (p.boxes||[]).forEach((b,i)=>{
     b.x=Math.max(-b.w/2,Math.min(W-b.w/2,b.x));b.y=Math.max(-b.h/2,Math.min(H-b.h/2,b.y));
-    if(b.img){const s=Math.max(b.w/b.img.width,b.h/b.img.height),dw=b.img.width*s,dh=b.img.height*s;
+    if(b.img){const s=Math.max(b.w/b.img.width,b.h/b.img.height)*(b.iz??1),dw=b.img.width*s,dh=b.img.height*s;
       x.save();x.beginPath();x.rect(b.x,b.y,b.w,b.h);x.clip();x.drawImage(b.img,b.x+(b.w-dw)/2,b.y+(b.h-dh)/2,dw,dh);x.restore()}
     else{x.fillStyle='rgba(255,255,255,.55)';x.fillRect(b.x,b.y,b.w,b.h);x.fillStyle='rgba(30,29,27,.5)';x.font=`500 ${Math.max(14,Math.min(26,b.w/9))}px ${FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText('이미지 '+(i+1),b.x+b.w/2,b.y+b.h/2);x.textAlign='left';x.textBaseline='alphabetic'}
     if(b.lw>0){x.strokeStyle=b.lc;x.lineWidth=b.lw;x.strokeRect(b.x+b.lw/2,b.y+b.lw/2,b.w-b.lw,b.h-b.lw)}
@@ -599,6 +599,7 @@ function renderList(){
             <label>선 두께 (px)<input type="number" data-bf="lw" min="0" max="40" step="0.5" value="${b.lw}" inputmode="decimal"></label>
             <label>선 색<span class="cpick"><input type="color" data-bf="lc" value="${b.lc.toLowerCase()}" aria-label="선 색"></span></label>
           </div>
+          <label>박스 안 사진 크기 <b class="izv" style="color:var(--fg);font-weight:600">${Math.round((b.iz??1)*100)}%</b><input type="range" data-bf="iz" min="0.1" max="2" step="0.01" value="${b.iz??1}"></label>
           <div class="rowbtn"><label class="unit" style="flex-direction:row;gap:6px">HEX<input type="text" data-bhex="lc" maxlength="7" spellcheck="false" value="${b.lc.toUpperCase()}" aria-label="선 색 HEX" style="width:96px;padding:6px 8px;font-size:12.5px;text-transform:uppercase"></label><span><button class="text" data-act="bxAll" data-j="${j}">선 스타일 전체 적용</button><button class="text" data-act="bxDel" data-j="${j}">박스 삭제</button></span></div>
         </div>`).join('')}</div>
         ${(p.boxes||[]).length<4?'<button data-act="bxAdd">이미지 박스 추가</button>':''}`:''}
@@ -645,7 +646,8 @@ function onListInput(e){
     if(e.target.dataset.bhex){const v=normHex(e.target.value);if(!v)return;b.lc=v;bxLast.lc=v;bx.querySelector('[data-bf="lc"]').value=v.toLowerCase();schedule();return}
     const k=e.target.dataset.bf;
     if(k==='lc'){b.lc=e.target.value.toUpperCase();bxLast.lc=b.lc;bx.querySelector('[data-bhex]').value=b.lc}
-    else{const v=parseFloat(e.target.value),lim={w:[40,1080],h:[40,1350],lw:[0,40]}[k];if(!(v>=lim[0]&&v<=lim[1]))return;
+    else{const v=parseFloat(e.target.value),lim={w:[40,1080],h:[40,1350],lw:[0,40],iz:[0.1,2]}[k];if(!(v>=lim[0]&&v<=lim[1]))return;
+      if(k==='iz'){b.iz=v;const lb=bx.querySelector('.izv');if(lb)lb.textContent=Math.round(v*100)+'%';schedule();return}
       if(k!=='lw'){b.x+=(b[k]-v)/2*(k==='w'?1:0);b.y+=(b[k]-v)/2*(k==='h'?1:0)}b[k]=v;bxLast[k]=v}
     schedule();return}
   const f=e.target.dataset.f;if(!f||f==='img')return;
