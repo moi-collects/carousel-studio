@@ -54,7 +54,7 @@ button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg);font-
 button.text{border:0;background:none;padding:4px 6px;color:var(--muted);font-size:12px}
 button.text:hover{color:var(--fg)}
 .drop{position:relative;display:flex;align-items:center;gap:12px;padding:8px;border:1px dashed var(--line);border-radius:10px;cursor:pointer;font-size:13px;color:var(--muted)}
-.drop:hover{border-color:var(--muted)}
+.drop:hover,.drop.paste-on{border-color:var(--fg)}
 .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .drop .th{width:44px;height:44px;border-radius:6px;background:var(--soft) center/cover no-repeat;flex:none}
 .hint{font-size:12px;color:var(--muted);margin:0}
@@ -135,6 +135,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
         <summary>표지</summary>
         <div class="body">
           <div class="drop"><input type="file" id="coverFile" accept="image/*" aria-label="표지 사진 선택"><span class="th" id="coverTh"></span><span>표지 사진 올리기</span></div>
+          <p class="hint">사진 칸에 마우스를 올리고 Ctrl+V(맥은 ⌘V)로 복사한 이미지를 바로 붙여넣을 수 있어요.</p>
           <label>표지 문구<textarea id="coverTitle" rows="2"></textarea></label>
           <div class="two">
             <label>확대<input type="range" id="coverZoom" min="1" max="2.5" step="0.01" value="1"></label>
@@ -796,6 +797,20 @@ $('mvLw').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
 function persist(){try{const o={tpl:state.tpl,bgLock:state.bgLock,ly:lyLast,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw,mvW:state.mvW};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
 function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){if(d.intro==='식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .')d.intro='';if(typeof d.sign==='string')d.sign=d.sign.replace(/(@moi\.collects)\s*🎾/,'$1');if(typeof d.bgLock==='boolean')state.bgLock=d.bgLock;KEYS.forEach(k=>{if(k!=='coverTitle'&&typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.ly&&typeof d.ly==='object')Object.keys(lyLast).forEach(k=>{if(typeof d.ly[k]==='string')lyLast[k]=d.ly[k]});else if(d.txt==='center'){lyLast.layout='desc';lyLast.alignA='center'}['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw;if(typeof d.mvW==='number'&&d.mvW>=200&&d.mvW<=1080)state.mvW=d.mvW}}catch(e){}}
+
+/* ---------- 이미지 붙여넣기 (Ctrl+V / ⌘V) ---------- */
+let hoverDrop=null;
+document.addEventListener('pointerover',e=>{const d=e.target.closest&&e.target.closest('.drop');if(d!==hoverDrop){hoverDrop&&hoverDrop.classList.remove('paste-on');hoverDrop=d;d&&d.classList.add('paste-on')}});
+document.addEventListener('paste',e=>{
+  const items=[...((e.clipboardData&&e.clipboardData.items)||[])],it=items.find(i=>i.kind==='file'&&/^image\//.test(i.type));if(!it)return;
+  const file=it.getAsFile();if(!file)return;
+  let drop=(hoverDrop&&document.contains(hoverDrop))?hoverDrop:(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.drop'));
+  if(!drop){const card=document.querySelector('.pitem.open');drop=card&&card.querySelector('.pbody .drop')}
+  if(!drop){toast('붙여넣을 사진 칸 위에 마우스를 올려주세요');return}
+  const input=drop.querySelector('input[type=file]');if(!input)return;
+  e.preventDefault();
+  try{const dt=new DataTransfer();dt.items.add(new File([file],file.name||'pasted.png',{type:file.type}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));toast('붙여넣었어요')}catch(err){toast('이 브라우저에서는 붙여넣기가 안 돼요')}
+});
 
 /* ---------- 임시저장 (IndexedDB, 여러 개) ---------- */
 function dbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('carousel-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
