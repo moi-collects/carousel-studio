@@ -141,7 +141,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
             <button class="tpl" data-tpl="A"><b>A · 기본</b><span>배경색 위 제품, 하단 흰 글씨</span></button>
             <button class="tpl" data-tpl="B"><b>B · 이미지 박스</b><span>A 레이아웃 위에 작은 이미지 박스 추가</span></button>
             <button class="tpl" data-tpl="C"><b>C · 책</b><span>제목 | 글쓴이, 가운데 사진 박스, 설명</span></button>
-            <button class="tpl" data-tpl="D"><b>D · 태그</b><span>사진 가득, 하단 가격표 라벨</span></button>
+            <button class="tpl" data-tpl="D"><b>D · 영화</b><span>배경 사진 위 제목과 코멘트 박스</span></button>
           </div>
           <div id="txtRow" style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:12px;color:var(--muted)">하단 텍스트 (A·B)</span>
@@ -159,6 +159,15 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
               <label>선 색<span class="cpick"><input type="color" id="bkLc" aria-label="선 색"></span></label>
             </div>
             <label class="unit" style="flex-direction:row;gap:6px">선 색 HEX<input type="text" id="bkLcHex" maxlength="7" spellcheck="false" aria-label="선 색 HEX" style="width:96px;padding:6px 8px;font-size:12.5px;text-transform:uppercase"></label>
+          </div>
+          <div id="mvRow" class="bxl" hidden>
+            <span style="font-size:12px;color:var(--muted)">영화 코멘트 박스 (모든 제품 공통)</span>
+            <div class="stk">
+              <label>박스<span class="cpick"><input type="color" data-mv="mvFill" aria-label="박스 색"><input type="text" data-mvhex="mvFill" maxlength="7" spellcheck="false" aria-label="박스 HEX"></span></label>
+              <label>글자<span class="cpick"><input type="color" data-mv="mvInk" aria-label="글자 색"><input type="text" data-mvhex="mvInk" maxlength="7" spellcheck="false" aria-label="글자 HEX"></span></label>
+              <label>선<span class="cpick"><input type="color" data-mv="mvLc" aria-label="선 색"><input type="text" data-mvhex="mvLc" maxlength="7" spellcheck="false" aria-label="선 HEX"></span></label>
+            </div>
+            <label style="max-width:50%">선 두께 (px, 0이면 없음)<input type="number" id="mvLw" min="0" max="40" step="0.5" inputmode="decimal"></label>
           </div>
           <p class="hint">표지는 모든 템플릿에서 똑같이 유지돼요.</p>
         </div>
@@ -225,14 +234,14 @@ const $=id=>document.getElementById(id);
 let uid=0,openId=null,downloads=null;
 const state={
   coverTitle:"올 여름,\n자꾸 생각나는 그릇이 생겼다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
-  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",emoji:"🍽️",unit:"₩",
+  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,emoji:"🍽️",unit:"₩",
   intro:"식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .",
   sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects 🎾",products:[]
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22};
 let stLast=Object.assign({},stDefault);
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,sample:false},stLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,bgDim:50,year:'',mv:null,sample:false},stLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -371,6 +380,38 @@ function bookDesc(x,p,boxBottom,col){
   lines.forEach((l,i)=>x.fillText(l,W/2,firstTop+asc+i*lh));
   x.textAlign='left';resetType(x);
 }
+const MV={w:660,pad:40,gap:50,lh:37};
+function wrapChars(x,text,maxW){const out=[];for(const para of text.split('\n')){let cur='';for(const ch of para){if(!cur&&ch===' ')continue;if(x.measureText(cur+ch).width>maxW&&cur){out.push(cur.trimEnd());cur=ch===' '?'':ch}else cur+=ch}out.push(cur.trimEnd())}return out}
+function drawMovie(x,p){
+  if(!p.mv)p.mv={x:100,b:H-100};
+  const bw=MV.w,inner=bw-MV.pad*2;
+  // comment lines
+  setType(x,500,24,-20);
+  const ref=x.measureText('가'),asc=ref.actualBoundingBoxAscent||18,dsc=ref.actualBoundingBoxDescent||4;
+  const lines=(p.desc||'').trim()?wrapChars(x,p.desc.trim(),inner):[];
+  const textH=lines.length?asc+(lines.length-1)*MV.lh+dsc:0;
+  const bh=Math.round(MV.pad*2+textH);
+  p.mv.x=Math.max(0,Math.min(W-bw,p.mv.x));p.mv.b=Math.max(bh+120,Math.min(H,p.mv.b));
+  const bx=p.mv.x,by=p.mv.b-bh;
+  x.fillStyle=state.mvFill;x.fillRect(bx,by,bw,bh);
+  if(state.mvLw>0){x.strokeStyle=state.mvLc;x.lineWidth=state.mvLw;x.strokeRect(bx+state.mvLw/2,by+state.mvLw/2,bw-state.mvLw,bh-state.mvLw)}
+  x.fillStyle=state.mvInk;x.textAlign='left';
+  lines.forEach((l,i)=>x.fillText(l,bx+MV.pad,by+MV.pad+asc+i*MV.lh));
+  resetType(x);
+  // title line: 🎬 + title(Bold) + (year)(Regular)
+  const title=p.brand||'영화 제목',yr=String(p.year||'').trim(),yrT=yr?'('+yr+')':'';
+  let ts=32,ys=30;
+  const meas=()=>{x.font=`700 ${ts}px ${FONT}`;resetType(x);const e=x.measureText('🎬').width;setType(x,700,ts,-50);const tm=x.measureText(title);let w=e+tm.width,d=tm.actualBoundingBoxDescent||0;
+    if(yrT){setType(x,400,ys,0);const sp=x.measureText(' ').width,ym=x.measureText(yrT);w+=sp+ym.width;d=Math.max(d,ym.actualBoundingBoxDescent||0)}return{e,w,d}};
+  let m=meas();while(m.w>W-bx-40&&ts>18){ts-=1;ys=Math.max(16,ys-1);m=meas()}
+  const base=by-MV.gap-m.d;let X=bx;
+  x.fillStyle='#fff';x.font=`700 ${ts}px ${FONT}`;resetType(x);x.fillText('🎬',X,base);X+=m.e;
+  setType(x,700,ts,-50);x.fillText(title,X,base);X+=x.measureText(title).width;
+  if(yrT){setType(x,400,ys,0);X+=x.measureText(' ').width;x.fillText(yrT,X,base);X+=x.measureText(yrT).width}
+  resetType(x);
+  const tTop=base-Math.max(ts*.95,30);
+  p._mvRects=[{x:bx,y:tTop,w:X-bx,h:by-tTop},{x:bx,y:by,w:bw,h:bh}];
+}
 function drawStickers(x,p){
   const st=p.stickers.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,6);
   const fs=p.stSize;resetType(x);x.font=`500 ${fs}px ${FONT}`;p._rects=[];
@@ -422,13 +463,10 @@ function drawProduct(cv,p){
   }
   else{
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
-    if(p.img)placeImg(x,p,0,0,W,H,p.fit);else placeholder(x,190,200,700,700,'rgba(255,255,255,.85)');
-    x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=8;drawAccount(x,'#fff');x.shadowBlur=0;
+    if(p.bg){const img=p.bg,sc=Math.max(W/img.width,H/img.height),dw=img.width*sc,dh=img.height*sc;x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);x.fillStyle=`rgba(0,0,0,${(p.bgDim??50)/100})`;x.fillRect(0,0,W,H)}
+    drawAccount(x,'rgba(255,255,255,.8)');
+    drawMovie(x,p);
     drawStickers(x,p);
-    x.shadowColor='rgba(0,0,0,.14)';x.shadowBlur=24;x.shadowOffsetY=6;x.fillStyle='#FFFFFF';rrect(x,60,H-270,W-120,210,26);x.fill();
-    x.shadowBlur=0;x.shadowOffsetY=0;
-    x.strokeStyle='#1E1D1B';x.lineWidth=2;x.beginPath();x.arc(W-104,H-226,9,0,Math.PI*2);x.stroke();
-    textBlock(x,p,'#1E1D1B');
   }
   resetType(x);x.shadowBlur=0;
 }
@@ -439,6 +477,7 @@ function buildCaption(){
   let out=title+(state.emoji?' '+state.emoji:'')+'\n\n';
   if(state.intro.trim())out+=state.intro.trim()+'\n\n';
   let prev=null;
+  if(state.tpl==='D'){state.products.forEach(p=>{const y=String(p.year||'').trim();out+=`🎬 ${p.brand||'영화 제목'}${y?` (${y})`:''}\n\n`});if(state.sign.trim())out+='__\n'+state.sign.trim();return out.trim()}
   if(state.tpl==='C'){state.products.forEach(p=>{const h=p.handle.trim().replace(/^@/,'');out+=[p.brand||'책 제목',(p.name||'').trim(),h?'@'+h:''].filter(Boolean).join(' | ')+'\n\n'});if(state.sign.trim())out+='__\n'+state.sign.trim();return out.trim()}
   state.products.forEach(p=>{
     const pr=fmtPrice(p.price),line=`${p.name||'제품명'}${p.color&&p.color.trim()?' / '+p.color.trim():''}${pr?' | '+pr:''}`;
@@ -462,20 +501,22 @@ function renderList(){
     const d=document.createElement('div');d.className='pitem'+(open?' open':'');d.dataset.id=p.id;
     d.innerHTML=`<div class="phead" data-act="toggle" role="button" tabindex="0" aria-expanded="${open}">
         <span class="th" style="${thumb(p)}"></span>
-        <span class="tx"><b>${esc(p.brand||'새 제품')}</b><span>${esc(p.name||'제품명 없음')}${fmtPrice(p.price)?' · '+fmtPrice(p.price):''}</span></span>
+        <span class="tx"><b>${esc(p.brand||'새 제품')}</b><span>${state.tpl==='D'?esc(p.year?p.year+'년':'개봉년도 없음'):esc(p.name||'제품명 없음')+(fmtPrice(p.price)?' · '+fmtPrice(p.price):'')}</span></span>
         ${p.sample?'<span class="tag">예시</span>':''}
       </div>
       <div class="pbody" ${open?'':'hidden'}>
-        <div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="${state.tpl==='C'?'책 표지':'제품 사진'} 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${state.tpl==='C'?(p.img?'책 표지 바꾸기':'책 표지 올리기'):(p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기')}</span></div>
-        ${state.tpl==='C'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>${p.bg?`<label>배경 위 검정 박스 불투명도 <b class="dimv" style="color:var(--fg);font-weight:600">${p.bgDim??50}%</b><input type="range" data-f="bgDim" id="bd${p.id}" min="0" max="100" step="1"></label><button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>`:''}`:''}
-        <div class="two"><label>${state.tpl==='C'?'책 제목':'브랜드'}<input type="text" data-f="brand" id="b${p.id}"></label><label>${state.tpl==='C'?'출판사 계정':'인스타 계정'}<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
-        <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>
-        ${state.tpl==='C'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
+        ${state.tpl==='D'?'':`<div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="${state.tpl==='C'?'책 표지':'제품 사진'} 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${state.tpl==='C'?(p.img?'책 표지 바꾸기':'책 표지 올리기'):(p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기')}</span></div>`}
+        ${state.tpl==='C'||state.tpl==='D'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>${p.bg?`<label>배경 위 검정 박스 불투명도 <b class="dimv" style="color:var(--fg);font-weight:600">${p.bgDim??50}%</b><input type="range" data-f="bgDim" id="bd${p.id}" min="0" max="100" step="1"></label><button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>`:''}`:''}
+        ${state.tpl==='D'?`<div class="two"><label>영화 제목<input type="text" data-f="brand" id="b${p.id}"></label><label>개봉년도 (선택)<input type="text" data-f="year" id="y${p.id}" inputmode="numeric" placeholder="1995"></label></div>
+        <label>코멘트 (박스 안 자동 줄바꿈 · 길이에 따라 박스가 위로 늘어남)<textarea data-f="desc" id="d${p.id}" rows="5"></textarea></label>
+        <button type="button" class="text" data-act="mvReset" style="align-self:flex-start">제목·박스 위치 초기화</button>`:`<div class="two"><label>${state.tpl==='C'?'책 제목':'브랜드'}<input type="text" data-f="brand" id="b${p.id}"></label><label>${state.tpl==='C'?'출판사 계정':'인스타 계정'}<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
+        <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>`}
+        ${state.tpl==='C'||state.tpl==='D'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
         ${state.tpl==='C'?`<label>설명 문구 (줄바꿈 그대로 · 길면 자동 줄바꿈)<textarea data-f="desc" id="d${p.id}" rows="4"></textarea></label>`:''}
         ${(state.tpl==='A'||state.tpl==='B')&&state.txt==='center'?`<label>설명 문구 (최대 두 줄 · 비워두면 "제품명 | 가격")<textarea data-f="desc" id="d${p.id}" rows="2" placeholder="${esc(autoDesc(p))}"></textarea></label>`:''}
-        <label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
+        ${state.tpl==='D'?'':`<label>사진 배치<select data-f="fit" id="f${p.id}"><option value="cover">꽉 채우기 (배경 있는 사진)</option><option value="contain">배경색 위에 놓기 (누끼 사진)</option></select></label>
         <label>사진 크기<input type="range" data-f="zoom" id="z${p.id}" min="0.5" max="3" step="0.01"></label>
-        <div class="two"><label>가로 위치<input type="range" data-f="offX" id="ox${p.id}" min="-1" max="1" step="0.01"></label><label>세로 위치<input type="range" data-f="offY" id="o${p.id}" min="-1" max="1" step="0.01"></label></div>
+        <div class="two"><label>가로 위치<input type="range" data-f="offX" id="ox${p.id}" min="-1" max="1" step="0.01"></label><label>세로 위치<input type="range" data-f="offY" id="o${p.id}" min="-1" max="1" step="0.01"></label></div>`}
         ${state.tpl==='B'?`<div class="sub-h">이미지 박스 <span class="hint" style="font-weight:400">(최대 4개 · 미리보기에서 끌어서 위치 조정)</span></div>
         <div class="bxl">${(p.boxes||[]).map((b,j)=>`<div class="bx" data-b="${j}">
           <div class="drop"><input type="file" accept="image/*" data-bimg="${j}" aria-label="이미지 박스 ${j+1} 사진 선택"><span class="th" style="${b.img?`background-image:url(${b.img.src})`:''}"></span><span>${b.img?'박스 '+(j+1)+' 사진 바꾸기':'박스 '+(j+1)+' 사진 올리기'}</span></div>
@@ -512,7 +553,7 @@ function renderList(){
 }
 function refreshHead(p){
   const card=document.querySelector(`.pitem[data-id="${p.id}"]`);if(!card)return;
-  card.querySelector('.phead .tx').innerHTML=`<b>${esc(p.brand||'새 제품')}</b><span>${esc(p.name||'제품명 없음')}${fmtPrice(p.price)?' · '+fmtPrice(p.price):''}</span>`;
+  card.querySelector('.phead .tx').innerHTML=`<b>${esc(p.brand||'새 제품')}</b><span>${state.tpl==='D'?esc(p.year?p.year+'년':'개봉년도 없음'):esc(p.name||'제품명 없음')+(fmtPrice(p.price)?' · '+fmtPrice(p.price):'')}</span>`;
 }
 const L=$('plist');
 let composing=false;
@@ -538,7 +579,7 @@ function onListInput(e){
   else if(e.target.type==='checkbox')p[f]=e.target.checked;
   else p[f]=e.target.value;
   if(f in stDefault)stLast[f]=p[f];
-  if(['brand','name','price'].includes(f))refreshHead(p);
+  if(['brand','name','price','year'].includes(f))refreshHead(p);
   if(['name','color','price'].includes(f)&&state.tpl!=='C'){const d=$('d'+p.id);if(d)d.placeholder=autoDesc(p)}
   schedule();
 }
@@ -558,6 +599,7 @@ function act(e){
   if(a==='stAll'){state.products.forEach(q=>Object.keys(stDefault).forEach(k=>q[k]=p[k]));Object.assign(stLast,...Object.keys(stDefault).map(k=>({[k]:p[k]})));schedule();toast('모든 제품에 적용했어요');return}
   if(a==='stReset'){p.stPos=[];schedule();return}
   if(a==='bgDel'){p.bg=null;renderList();schedule();return}
+  if(a==='mvReset'){p.mv=null;schedule();return}
   if(a==='bxAdd'){if(p.boxes.length<4){const n=p.boxes.length;p.boxes.push({img:null,w:bxLast.w,h:bxLast.h,lw:bxLast.lw,lc:bxLast.lc,x:130+n*40,y:340+n*40})}renderList();schedule();return}
   if(a==='bxDel'){p.boxes.splice(+el.dataset.j,1);renderList();schedule();return}
   if(a==='bxAll'){const s=p.boxes[+el.dataset.j];state.products.forEach(q=>(q.boxes||[]).forEach(b=>{b.lw=s.lw;b.lc=s.lc}));bxLast.lw=s.lw;bxLast.lc=s.lc;renderList();schedule();toast('모든 이미지 박스에 적용했어요');return}
@@ -570,7 +612,7 @@ L.addEventListener('click',act);
 L.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('phead')){e.preventDefault();act(e)}});
 $('addProd').onclick=()=>{const p=newProduct();state.products.push(p);openId=p.id;sel=state.products.length;renderList();schedule();const el=$('b'+p.id);el&&el.focus()};
 $('bulkApply').onclick=()=>{
-  let n=0;$('bulk').value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const c=l.split(/\s*[|\t]\s*/);if(!c[0])return;state.products.push(newProduct({brand:c[0],handle:(c[1]||'').replace(/^@/,''),name:c[2]||'',price:c[3]||'',color:c[4]||''}));n++});
+  let n=0;$('bulk').value.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const c=l.split(/\s*[|\t]\s*/);if(!c[0])return;state.products.push(state.tpl==='D'?newProduct({brand:c[0],year:c[1]||''}):newProduct({brand:c[0],handle:(c[1]||'').replace(/^@/,''),name:c[2]||'',price:c[3]||'',color:c[4]||''}));n++});
   if(n){$('bulk').value='';renderList();schedule();toast(`제품 ${n}개를 추가했어요`)}else toast('추가할 줄이 없어요');
 };
 function loadFile(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=r.result};r.onerror=rej;r.readAsDataURL(f)})}
@@ -586,6 +628,7 @@ const stage=$('stage'),sctx=stage.getContext('2d');
 function drawStage(){if(!canvases[sel])sel=0;sctx.clearRect(0,0,W,H);sctx.drawImage(canvases[sel].cv,0,0);
   $('stageLab').textContent=String(sel+1).padStart(2,'0')+' · '+(sel===0?'표지':(state.products[sel-1].brand||'제품'));
   const sp=sel>0&&state.products[sel-1],hasS=sp&&sp._rects&&sp._rects.length,hasB=sp&&state.tpl==='B'&&sp.boxes&&sp.boxes.length;
+  if(sp&&state.tpl==='D'){$('stageHint').textContent=hasS?'제목·코멘트 박스·스티커를 끌어서 옮길 수 있어요':'제목·코멘트 박스를 끌어서 옮길 수 있어요';return}
   $('stageHint').textContent=hasS&&hasB?'스티커·이미지 박스를 끌어서 옮길 수 있어요':hasB?'이미지 박스를 끌어서 옮길 수 있어요':hasS?'스티커를 끌어서 옮길 수 있어요':''}
 function select(i){sel=i;const p=state.products[i-1];if(p&&openId!==p.id){openId=p.id;renderList();const el=document.querySelector(`.pitem[data-id="${p.id}"]`);el&&el.scrollIntoView({block:'nearest',behavior:'smooth'})}markActive();drawStage()}
 (function(){
@@ -595,11 +638,12 @@ function select(i){sel=i;const p=state.products[i-1];if(p&&openId!==p.id){openId
   const hit=q=>{const p=state.products[sel-1];if(!p)return null;
     if(p._rects)for(let k=p._rects.length-1;k>=0;k--)if(inR(p._rects[k],q))return{t:'s',k};
     if(state.tpl==='B'&&p._boxRects)for(let k=p._boxRects.length-1;k>=0;k--)if(inR(p._boxRects[k],q))return{t:'b',k};
+    if(state.tpl==='D'&&p._mvRects&&p._mvRects.some(r=>inR(r,q)))return{t:'m',k:0};
     return null};
   stage.addEventListener('touchstart',e=>{if(hit(pt(e.touches[0])))e.preventDefault()},{passive:false});
-  stage.addEventListener('pointerdown',e=>{const q=pt(e),h=hit(q);if(!h)return;const p=state.products[sel-1],o=h.t==='s'?p.stPos[h.k]:p.boxes[h.k];drag={p,h,dx:q.x-o.x,dy:q.y-o.y};stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
+  stage.addEventListener('pointerdown',e=>{const q=pt(e),h=hit(q);if(!h)return;const p=state.products[sel-1],o=h.t==='s'?p.stPos[h.k]:h.t==='m'?{x:p.mv.x,y:p.mv.b}:p.boxes[h.k];drag={p,h,dx:q.x-o.x,dy:q.y-o.y};stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
   stage.addEventListener('pointermove',e=>{const q=pt(e);if(!drag){stage.style.cursor=hit(q)?'grab':'';return}
-    if(drag.h.t==='s')drag.p.stPos[drag.h.k]={x:q.x-drag.dx,y:q.y-drag.dy};else{const b=drag.p.boxes[drag.h.k];b.x=q.x-drag.dx;b.y=q.y-drag.dy}
+    if(drag.h.t==='s')drag.p.stPos[drag.h.k]={x:q.x-drag.dx,y:q.y-drag.dy};else if(drag.h.t==='m'){drag.p.mv={x:q.x-drag.dx,b:q.y-drag.dy}}else{const b=drag.p.boxes[drag.h.k];b.x=q.x-drag.dx;b.y=q.y-drag.dy}
     drawProduct(canvases[sel].cv,drag.p);drawStage()});
   const end=()=>{if(drag){drag=null;stage.style.cursor=''}};
   stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);
@@ -651,20 +695,24 @@ function setDl(){$('saveAll').hidden=!downloads;$('saveCur').hidden=!downloads;$
 let t0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t0);t0=setTimeout(()=>t.classList.remove('on'),1800)}
 
 /* ---------- templates ---------- */
-const TPLN={A:'A · 기본',B:'B · 이미지 박스',C:'C · 책',D:'D · 태그'};
-function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||'';if(typeof markTxt==='function')markTxt();if(typeof markBook==='function')markBook()}
+const TPLN={A:'A · 기본',B:'B · 이미지 박스',C:'C · 책',D:'D · 영화'};
+function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||'';if(typeof markTxt==='function')markTxt();if(typeof markBook==='function')markBook();if(typeof markMv==='function')markMv()}
 document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{state.tpl=b.dataset.tpl;markTpl();renderList();schedule()}));
 function markBook(){const on=state.tpl==='C';$('bookRow').hidden=!on;$('bkW').value=state.bkW;$('bkH').value=state.bkH;$('bkLw').value=state.bkLw;$('bkLc').value=state.bkLc.toLowerCase();$('bkLcHex').value=state.bkLc.toUpperCase()}
 [['bkW',100,1080],['bkH',100,1000],['bkLw',0,40]].forEach(([k,a,b])=>$(k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=a&&v<=b))return;state[k]=v;schedule()}));
 $('bkLc').addEventListener('input',e=>{state.bkLc=e.target.value.toUpperCase();$('bkLcHex').value=state.bkLc;schedule()});
 $('bkLcHex').addEventListener('input',e=>{const v=normHex(e.target.value);if(!v)return;state.bkLc=v;$('bkLc').value=v.toLowerCase();schedule()});
+function markMv(){$('mvRow').hidden=state.tpl!=='D';document.querySelectorAll('[data-mv]').forEach(el=>el.value=state[el.dataset.mv].toLowerCase());document.querySelectorAll('[data-mvhex]').forEach(el=>el.value=state[el.dataset.mvhex].toUpperCase());$('mvLw').value=state.mvLw}
+document.querySelectorAll('[data-mv]').forEach(el=>el.addEventListener('input',e=>{const k=el.dataset.mv;state[k]=e.target.value.toUpperCase();document.querySelector(`[data-mvhex="${k}"]`).value=state[k];schedule()}));
+document.querySelectorAll('[data-mvhex]').forEach(el=>el.addEventListener('input',e=>{const k=el.dataset.mvhex,v=normHex(e.target.value);if(!v)return;state[k]=v;document.querySelector(`[data-mv="${k}"]`).value=v.toLowerCase();schedule()}));
+$('mvLw').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=0&&v<=40))return;state.mvLw=v;schedule()});
 function markTxt(){document.querySelectorAll('[data-txt]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.txt===state.txt)));$('txtRow').hidden=!(state.tpl==='A'||state.tpl==='B')}
 document.querySelectorAll('[data-txt]').forEach(b=>b.addEventListener('click',()=>{state.txt=b.dataset.txt;markTxt();renderList();schedule()}));
 
 /* ---------- light persistence (text settings only) ---------- */
 const KEYS=['coverTitle','emoji','unit','intro','sign','bg','account'];
-function persist(){try{const o={tpl:state.tpl,txt:state.txt,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
-function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.txt==='left'||d.txt==='center')state.txt=d.txt;['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc)}}catch(e){}}
+function persist(){try{const o={tpl:state.tpl,txt:state.txt,bkW:state.bkW,bkH:state.bkH,bkLw:state.bkLw,bkLc:state.bkLc,mvFill:state.mvFill,mvInk:state.mvInk,mvLc:state.mvLc,mvLw:state.mvLw};KEYS.forEach(k=>o[k]=state[k]);localStorage.setItem('cs-draft',JSON.stringify(o))}catch(e){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem('cs-draft')||'null');if(d){KEYS.forEach(k=>{if(typeof d[k]==='string')state[k]=d[k]});if(TPLN[d.tpl])state.tpl=d.tpl;if(d.txt==='left'||d.txt==='center')state.txt=d.txt;['bkW','bkH','bkLw'].forEach(k=>{if(typeof d[k]==='number')state[k]=d[k]});if(normHex(d.bkLc||''))state.bkLc=normHex(d.bkLc);['mvFill','mvInk','mvLc'].forEach(k=>{if(normHex(d[k]||''))state[k]=normHex(d[k])});if(typeof d.mvLw==='number')state.mvLw=d.mvLw}}catch(e){}}
 
 /* ---------- boot ---------- */
 (async()=>{
