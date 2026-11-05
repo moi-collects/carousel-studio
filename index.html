@@ -468,14 +468,15 @@ function drawStickers(x,p){
   const st=p.stickers.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,6);
   const fs=p.stSize;resetType(x);x.font=`500 ${fs}px ${FONT}`;p._rects=[];
   st.forEach((t,i)=>{
-    const padX=fs*.7,h=Math.round(fs*1.95),w=x.measureText(t).width+padX*2;
+    const runs=parseRich(t,{w:500,size:fs,col:p.stInk,tr:0}),mx=Math.max(fs,...runs.map(r=>r.size));
+    const padX=fs*.7,h=Math.round(mx*1.95),w=richW(x,runs)+padX*2;
     if(!p.stPos[i])p.stPos[i]={x:130+(i%2)*90,y:300+i*(h+20)};
     const pos=p.stPos[i];pos.x=Math.max(0,Math.min(W-w,pos.x));pos.y=Math.max(0,Math.min(H-h,pos.y));
     x.globalAlpha=(p.stOpacity??100)/100;x.fillStyle=p.stBg;x.fillRect(pos.x,pos.y,w,h);x.globalAlpha=1;
     if(p.stBorderOn){const ln=p.stLine||'solid';x.strokeStyle=p.stBorder;x.lineWidth=ln==='dotted'?3:2;
       if(ln==='dashed')x.setLineDash([10,6]);else if(ln==='dotted'){x.lineCap='round';x.setLineDash([0,7])}
       const o=x.lineWidth/2;x.strokeRect(pos.x+o,pos.y+o,w-o*2,h-o*2);x.setLineDash([]);x.lineCap='butt'}
-    x.fillStyle=p.stInk;x.textBaseline='middle';x.fillText(t,pos.x+padX,pos.y+h/2+1);x.textBaseline='alphabetic';
+    x.textBaseline='middle';drawRich(x,runs,pos.x+padX,pos.y+h/2+1,'left');x.textBaseline='alphabetic';
     p._rects[i]={x:pos.x,y:pos.y,w,h};
   });
 }
@@ -594,7 +595,7 @@ function renderList(){
         </div>`).join('')}</div>
         ${(p.boxes||[]).length<4?'<button data-act="bxAdd">이미지 박스 추가</button>':''}`:''}
         <div class="sub-h">스티커</div>
-        <label>코멘트 (줄마다 하나 · 미리보기에서 끌어서 위치 조정)<textarea data-f="stickers" id="s${p.id}" rows="2"></textarea></label>
+        <label>코멘트 (줄마다 하나 · 미리보기에서 끌어서 위치 조정 · **굵게** 등 꾸미기 가능)<textarea data-f="stickers" id="s${p.id}" rows="2"></textarea></label>
         <div class="stk">
           <label>박스<span class="cpick"><input type="color" data-f="stBg" id="sb${p.id}" aria-label="박스 색"><input type="text" data-hex="stBg" id="sbh${p.id}" maxlength="7" spellcheck="false" aria-label="박스 HEX"></span></label>
           <label>글자<span class="cpick"><input type="color" data-f="stInk" id="si${p.id}" aria-label="글자 색"><input type="text" data-hex="stInk" id="sih${p.id}" maxlength="7" spellcheck="false" aria-label="글자 HEX"></span></label>
