@@ -151,9 +151,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
             </div>
           </div>
           <div id="bookRow" class="bxl" hidden>
-            <span style="font-size:12px;color:var(--muted)">책 템플릿 설정 (모든 제품 공통)</span>
-            <div class="drop"><input type="file" id="bkBgFile" accept="image/*" aria-label="배경 사진 선택"><span class="th" id="bkBgTh"></span><span id="bkBgLab">배경 사진 올리기 (없으면 배경색)</span></div>
-            <button type="button" class="text" id="bkBgDel" hidden style="align-self:flex-start">배경 사진 빼기</button>
+            <span style="font-size:12px;color:var(--muted)">책 사진 박스 (모든 제품 공통)</span>
             <div class="bx4">
               <label>가로 (px)<input type="number" id="bkW" min="100" max="1080" step="1" inputmode="numeric"></label>
               <label>세로 (px)<input type="number" id="bkH" min="100" max="1000" step="1" inputmode="numeric"></label>
@@ -227,14 +225,14 @@ const $=id=>document.getElementById(id);
 let uid=0,openId=null,downloads=null;
 const state={
   coverTitle:"올 여름,\n자꾸 생각나는 그릇이 생겼다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
-  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",bkBg:null,emoji:"🍽️",unit:"₩",
+  account:"moi.collects",bg:"#D6D7D9",tpl:"A",txt:"left",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",emoji:"🍽️",unit:"₩",
   intro:"식탁 위에 올려두고 싶은 그릇들을 모아봤어요 ./\n예쁜 그릇 하나가 밥상 분위기를 이렇게 바꿀 수 있다니 . .",
   sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects 🎾",products:[]
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22};
 let stLast=Object.assign({},stDefault);
 const bxLast={w:230,h:275,lw:2,lc:'#1B1B1B'};
-function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',sample:false},stLast,o)}
+function newProduct(o={}){return Object.assign({id:++uid,brand:'',handle:'',name:'',color:'',price:'',stickers:'',img:null,fit:'cover',zoom:1,offX:0,offY:0,stPos:[],boxes:[],desc:'',bg:null,sample:false},stLast,o)}
 
 /* ---------- theme ---------- */
 function setTheme(t){
@@ -413,7 +411,7 @@ function drawProduct(cv,p){
   }
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
-    if(state.bkBg){const img=state.bkBg,sc=Math.max(W/img.width,H/img.height),dw=img.width*sc,dh=img.height*sc;x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh)}
+    if(p.bg){const img=p.bg,sc=Math.max(W/img.width,H/img.height),dw=img.width*sc,dh=img.height*sc;x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh)}
     drawAccount(x,'rgba(255,255,255,.8)');
     bookTitle(x,p,'#fff');
     const bw=state.bkW,bh=state.bkH,bx=Math.round((W-bw)/2),by=385;
@@ -468,7 +466,8 @@ function renderList(){
         ${p.sample?'<span class="tag">예시</span>':''}
       </div>
       <div class="pbody" ${open?'':'hidden'}>
-        <div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="제품 사진 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기'}</span></div>
+        <div class="drop"><input type="file" accept="image/*" data-f="img" aria-label="${state.tpl==='C'?'책 표지':'제품 사진'} 선택"><span class="th" style="${thumb(p)};background-size:contain"></span><span>${state.tpl==='C'?(p.img?'책 표지 바꾸기':'책 표지 올리기'):(p.img&&!p.sample?'사진 바꾸기':'제품 사진 올리기')}</span></div>
+        ${state.tpl==='C'?`<div class="drop"><input type="file" accept="image/*" data-pbg="1" aria-label="배경 사진 선택"><span class="th" style="${p.bg?`background-image:url(${p.bg.src})`:''}"></span><span>${p.bg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 기본 배경색)'}</span></div>${p.bg?'<button type="button" class="text" data-act="bgDel" style="align-self:flex-start">배경 사진 빼기</button>':''}`:''}
         <div class="two"><label>${state.tpl==='C'?'책 제목':'브랜드'}<input type="text" data-f="brand" id="b${p.id}"></label><label>${state.tpl==='C'?'출판사 계정':'인스타 계정'}<input type="text" data-f="handle" id="h${p.id}" placeholder="@account"></label></div>
         <label>${state.tpl==='C'?'글쓴이 (선택)':'제품명'}<input type="text" data-f="name" id="n${p.id}"></label>
         ${state.tpl==='C'?'':`<div class="two"><label>컬러 (선택)<input type="text" data-f="color" id="c${p.id}"></label><label>가격<input type="text" data-f="price" id="p${p.id}" inputmode="numeric"></label></div>`}
@@ -543,6 +542,8 @@ function onListInput(e){
   schedule();
 }
 L.addEventListener('change',e=>{
+  if(e.target.dataset.pbg&&e.target.files[0]){const p=state.products.find(q=>q.id==e.target.closest('.pitem').dataset.id);
+    loadFile(e.target.files[0]).then(img=>{p.bg=img;renderList();schedule()});return}
   if(e.target.dataset.bimg!==undefined&&e.target.files[0]){const p=state.products.find(q=>q.id==e.target.closest('.pitem').dataset.id),b=p.boxes[+e.target.dataset.bimg];
     loadFile(e.target.files[0]).then(img=>{b.img=img;renderList();schedule()});return}
   if(e.target.dataset.f!=='img'||!e.target.files[0])return;
@@ -555,6 +556,7 @@ function act(e){
   if(a==='toggle'){openId=openId===p.id?null:p.id;if(openId)sel=i+1;renderList();markActive();drawStage();return}
   if(a==='stAll'){state.products.forEach(q=>Object.keys(stDefault).forEach(k=>q[k]=p[k]));Object.assign(stLast,...Object.keys(stDefault).map(k=>({[k]:p[k]})));schedule();toast('모든 제품에 적용했어요');return}
   if(a==='stReset'){p.stPos=[];schedule();return}
+  if(a==='bgDel'){p.bg=null;renderList();schedule();return}
   if(a==='bxAdd'){if(p.boxes.length<4){const n=p.boxes.length;p.boxes.push({img:null,w:bxLast.w,h:bxLast.h,lw:bxLast.lw,lc:bxLast.lc,x:130+n*40,y:340+n*40})}renderList();schedule();return}
   if(a==='bxDel'){p.boxes.splice(+el.dataset.j,1);renderList();schedule();return}
   if(a==='bxAll'){const s=p.boxes[+el.dataset.j];state.products.forEach(q=>(q.boxes||[]).forEach(b=>{b.lw=s.lw;b.lc=s.lc}));bxLast.lw=s.lw;bxLast.lc=s.lc;renderList();schedule();toast('모든 이미지 박스에 적용했어요');return}
@@ -651,12 +653,10 @@ let t0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on'
 const TPLN={A:'A · 기본',B:'B · 이미지 박스',C:'C · 책',D:'D · 태그'};
 function markTpl(){document.querySelectorAll('.tpl').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tpl===state.tpl)));$('tplName').textContent=TPLN[state.tpl]||'';if(typeof markTxt==='function')markTxt();if(typeof markBook==='function')markBook()}
 document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{state.tpl=b.dataset.tpl;markTpl();renderList();schedule()}));
-function markBook(){const on=state.tpl==='C';$('bookRow').hidden=!on;$('bkW').value=state.bkW;$('bkH').value=state.bkH;$('bkLw').value=state.bkLw;$('bkLc').value=state.bkLc.toLowerCase();$('bkLcHex').value=state.bkLc.toUpperCase();$('bkBgDel').hidden=!state.bkBg;$('bkBgLab').textContent=state.bkBg?'배경 사진 바꾸기':'배경 사진 올리기 (없으면 배경색)';$('bkBgTh').style.backgroundImage=state.bkBg?`url(${state.bkBg.src})`:''}
+function markBook(){const on=state.tpl==='C';$('bookRow').hidden=!on;$('bkW').value=state.bkW;$('bkH').value=state.bkH;$('bkLw').value=state.bkLw;$('bkLc').value=state.bkLc.toLowerCase();$('bkLcHex').value=state.bkLc.toUpperCase()}
 [['bkW',100,1080],['bkH',100,1000],['bkLw',0,40]].forEach(([k,a,b])=>$(k).addEventListener('input',e=>{const v=parseFloat(e.target.value);if(!(v>=a&&v<=b))return;state[k]=v;schedule()}));
 $('bkLc').addEventListener('input',e=>{state.bkLc=e.target.value.toUpperCase();$('bkLcHex').value=state.bkLc;schedule()});
 $('bkLcHex').addEventListener('input',e=>{const v=normHex(e.target.value);if(!v)return;state.bkLc=v;$('bkLc').value=v.toLowerCase();schedule()});
-$('bkBgFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadFile(f).then(i=>{state.bkBg=i;markBook();schedule()});e.target.value=''});
-$('bkBgDel').addEventListener('click',()=>{state.bkBg=null;markBook();schedule()});
 function markTxt(){document.querySelectorAll('[data-txt]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.txt===state.txt)));$('txtRow').hidden=!(state.tpl==='A'||state.tpl==='B')}
 document.querySelectorAll('[data-txt]').forEach(b=>b.addEventListener('click',()=>{state.txt=b.dataset.txt;markTxt();renderList();schedule()}));
 
