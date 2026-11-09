@@ -368,7 +368,7 @@ function textBlock(x,p,col,al){
   const L=100,R=W-100;
   if(al==='center'||al==='right'){
     const ax=al==='center'?W/2:R;
-    const line=[[p.name||'제품명',p.color&&p.color.trim()].filter(Boolean).join(' / '),fmtPrice(p.price)].filter(Boolean).join(' | ');
+    const line=[[(p.name||'제품명').toUpperCase(),p.color&&p.color.trim().toUpperCase()].filter(Boolean).join(' / '),fmtPrice(p.price)].filter(Boolean).join(' | ');
     let s2=30,runs=parseRich(line,{w:500,size:s2,col,tr:-10});while(richW(x,runs)>R-L&&s2>20){s2-=1;runs=parseRich(line,{w:500,size:s2,col,tr:-10})}
     const m2=richMetrics(x,runs),base2=H-140-m2.d,top2=base2-m2.a;
     drawRich(x,runs,ax,base2,al);
@@ -376,7 +376,7 @@ function textBlock(x,p,col,al){
     while(x.measureText(brand).width>R-L&&s1>30){s1-=1;setType(x,700,s1,-10)}
     x.fillStyle=col;x.textAlign=al;x.fillText(brand,ax,top2-24-(x.measureText(brand).actualBoundingBoxDescent||0));
     x.textAlign='left';resetType(x);return}
-  const line2=[p.name||'제품명',p.color&&p.color.trim()].filter(Boolean).join(' / ');
+  const line2=[(p.name||'제품명').toUpperCase(),p.color&&p.color.trim().toUpperCase()].filter(Boolean).join(' / ');
   const price=fmtPrice(p.price);x.fillStyle=col;
   setType(x,500,30,-10);const pw=price?x.measureText(price).width:0;
   let s2=30,runs=parseRich(line2,{w:500,size:s2,col,tr:-10});while(richW(x,runs)>R-L-pw-40&&s2>20){s2-=1;runs=parseRich(line2,{w:500,size:s2,col,tr:-10})}
@@ -388,7 +388,7 @@ function textBlock(x,p,col,al){
   x.fillStyle=col;x.fillText(brand,L,top2-24-(x.measureText(brand).actualBoundingBoxDescent||0));
   resetType(x);
 }
-function autoDesc(p){const pr=fmtPrice(p.price);return[[p.name||'제품명',p.color&&p.color.trim()].filter(Boolean).join(' / '),pr].filter(Boolean).join(' | ')}
+function autoDesc(p){const pr=fmtPrice(p.price);return[[(p.name||'제품명').toUpperCase(),p.color&&p.color.trim().toUpperCase()].filter(Boolean).join(' / '),pr].filter(Boolean).join(' | ')}
 function wrapLines(x,text,maxW,maxN){
   const out=[];
   for(const para of text.split('\n')){
