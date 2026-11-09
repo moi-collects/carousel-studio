@@ -302,15 +302,15 @@ function drawCover(cv){
   const lines=state.coverTitle.split('\n').filter(l=>l.trim()).slice(0,3);
   x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=12;x.fillStyle='#fff';
   if(lines.length){
-    let size=80;setType(x,700,size,-10);
-    while(lines.some(l=>x.measureText(l).width>W-140)&&size>44){size-=2;setType(x,700,size,-10)}
-    const lh=Math.round(size*1.3);
+    let size=85;setType(x,700,size,-10);
+    while(lines.some(l=>x.measureText(l).width>W-200)&&size>44){size-=2;setType(x,700,size,-10)}
+    const lh=size+24;
     const desc=x.measureText(lines[lines.length-1]).actualBoundingBoxDescent||0;
-    const firstBase=H-200-desc-(lines.length-1)*lh;
+    const firstBase=H-260-desc-(lines.length-1)*lh;
     const asc=x.measureText(lines[0]).actualBoundingBoxAscent||size*.78;
-    lines.forEach((l,i)=>x.fillText(l,70,firstBase+i*lh));
+    lines.forEach((l,i)=>x.fillText(l,130,firstBase+i*lh));
     const acc=state.account.trim();
-    if(acc){setType(x,500,25,-20);const ad=x.measureText(acc).actualBoundingBoxDescent||0;x.globalAlpha=.9;x.fillText(acc,70,firstBase-asc-60-ad);x.globalAlpha=1}
+    if(acc){setType(x,500,25,-20);const ad=x.measureText(acc).actualBoundingBoxDescent||0;x.globalAlpha=.9;x.fillText(acc,130,firstBase-asc-60-ad);x.globalAlpha=1}
   }
   resetType(x);
   x.shadowBlur=0;
@@ -370,7 +370,7 @@ function textBlock(x,p,col,al){
     const ax=al==='center'?W/2:R;
     const line=[[p.name||'제품명',p.color&&p.color.trim()].filter(Boolean).join(' / '),fmtPrice(p.price)].filter(Boolean).join(' | ');
     let s2=30,runs=parseRich(line,{w:500,size:s2,col,tr:-10});while(richW(x,runs)>R-L&&s2>20){s2-=1;runs=parseRich(line,{w:500,size:s2,col,tr:-10})}
-    const m2=richMetrics(x,runs),base2=H-100-m2.d,top2=base2-m2.a;
+    const m2=richMetrics(x,runs),base2=H-140-m2.d,top2=base2-m2.a;
     drawRich(x,runs,ax,base2,al);
     const brand=p.brand||'브랜드';let s1=50;setType(x,700,s1,-10);
     while(x.measureText(brand).width>R-L&&s1>30){s1-=1;setType(x,700,s1,-10)}
@@ -380,7 +380,7 @@ function textBlock(x,p,col,al){
   const price=fmtPrice(p.price);x.fillStyle=col;
   setType(x,500,30,-10);const pw=price?x.measureText(price).width:0;
   let s2=30,runs=parseRich(line2,{w:500,size:s2,col,tr:-10});while(richW(x,runs)>R-L-pw-40&&s2>20){s2-=1;runs=parseRich(line2,{w:500,size:s2,col,tr:-10})}
-  const m2=richMetrics(x,runs),base2=H-100-m2.d,top2=base2-m2.a;
+  const m2=richMetrics(x,runs),base2=H-140-m2.d,top2=base2-m2.a;
   drawRich(x,runs,L,base2,'left');
   if(price){setType(x,500,30,-10);x.fillStyle=col;x.textAlign='right';x.fillText(price,R,base2);x.textAlign='left'}
   const brand=p.brand||'브랜드';let s1=50;setType(x,700,s1,-10);
@@ -412,9 +412,9 @@ function textBlockCenter(x,p,col,al='center'){
   const L=100,R=W-100,cx=al==='left'?L:al==='right'?R:W/2;
   const desc=(p.desc&&p.desc.trim())?p.desc.trim():autoDesc(p);
   const lines=richLines(x,parseRich(desc,{w:400,size:26,col,tr:-20}),R-L,'word',2,false);
-  let top=H-100;
+  let top=H-140;
   if(lines.length){
-    const lh=44,lastBase=H-100-richMetrics(x,lines[lines.length-1]).d,firstBase=lastBase-(lines.length-1)*lh;
+    const lh=44,lastBase=H-140-richMetrics(x,lines[lines.length-1]).d,firstBase=lastBase-(lines.length-1)*lh;
     lines.forEach((l,i)=>drawRich(x,l,cx,firstBase+i*lh,al));
     top=firstBase-richMetrics(x,lines[0]).a;
   }
@@ -523,7 +523,6 @@ function drawProduct(cv,p){
   const t=state.tpl||'A',idx=state.products.indexOf(p),total=state.products.length;
   if(t==='A'){
     const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,shade(state.bg,.18));g.addColorStop(1,state.bg);x.fillStyle=g;x.fillRect(0,0,W,H);
-    drawAccount(x,'rgba(255,255,255,.8)');
     const nA=p.split||1;
     if(nA>1){const imgs=[p.img,...(p.imgX||[])].slice(0,nA);let any=false;tileRects(nA).forEach((r,i)=>{if(imgs[i]){const o=i===0?{x:p.offX,y:p.offY}:((p.offs||[])[i]||{x:0,y:0});coverDraw(x,imgs[i],r,p.zoom,o.x,o.y);addHit(p,'A',i,r,imgs[i],p.zoom);any=true}});
       if(any){if(p.textOn!==false){const gg=x.createLinearGradient(0,H*.62,0,H);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.32)');x.fillStyle=gg;x.fillRect(0,H*.62,W,H*.38)}}else placeholder(x,190,240,700,700,'rgba(255,255,255,.85)')}
@@ -537,7 +536,6 @@ function drawProduct(cv,p){
   else if(t==='C'){
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
     drawBgTiles(x,p);
-    drawAccount(x,'rgba(255,255,255,.8)');
     bookTitle(x,p,'#fff',385);
     const bw=state.bkW,bh=state.bkH,bx=Math.round((W-bw)/2),by=385;
     if(p.img){placeImg(x,p,bx,by,bw,bh,p.fit);addHit(p,'cover',0,[bx,by,bw,bh],p.img,p.zoom,p.fit==='contain'?'contain':'cover')}else{x.fillStyle='rgba(255,255,255,.15)';x.fillRect(bx,by,bw,bh);placeholder(x,bx,by,bw,bh,'rgba(255,255,255,.85)')}
@@ -549,7 +547,6 @@ function drawProduct(cv,p){
   else{
     x.fillStyle=state.bg;x.fillRect(0,0,W,H);
     drawBgTiles(x,p);
-    drawAccount(x,'rgba(255,255,255,.8)');
     drawBoxes(x,p);
     drawMovie(x,p);
     drawStickers(x,p);
