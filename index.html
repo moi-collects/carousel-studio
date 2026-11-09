@@ -312,14 +312,14 @@ function drawCover(cv){
   x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=12;x.fillStyle='#fff';
   if(lines.length){
     let size=85;setType(x,700,size,-10);
-    while(lines.some(l=>x.measureText(l).width>W-200)&&size>44){size-=2;setType(x,700,size,-10)}
+    while(lines.some(l=>x.measureText(l).width>W-170)&&size>44){size-=2;setType(x,700,size,-10)}
     const lh=size+24;
     const desc=x.measureText(lines[lines.length-1]).actualBoundingBoxDescent||0;
     const firstBase=H-260-desc-(lines.length-1)*lh;
     const asc=x.measureText(lines[0]).actualBoundingBoxAscent||size*.78;
-    lines.forEach((l,i)=>x.fillText(l,130,firstBase+i*lh));
+    lines.forEach((l,i)=>x.fillText(l,100,firstBase+i*lh));
     const acc=state.account.trim();
-    if(acc){setType(x,500,25,-20);const ad=x.measureText(acc).actualBoundingBoxDescent||0;x.globalAlpha=.9;x.fillText(acc,130,firstBase-asc-60-ad);x.globalAlpha=1}
+    if(acc){setType(x,500,25,-20);const ad=x.measureText(acc).actualBoundingBoxDescent||0;x.globalAlpha=.9;x.fillText(acc,100,firstBase-asc-60-ad);x.globalAlpha=1}
   }
   resetType(x);
   x.shadowBlur=0;
