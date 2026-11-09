@@ -110,6 +110,7 @@ details.tip p{margin:6px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6
 .add button{flex:1}
 /* preview */
 .stage{--stw:min(600px,max(300px,calc((100vh - 250px)*.8)));background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0}
+.pv-small .stage{--stw:280px}
 .stage canvas{width:100%;max-width:var(--stw);height:auto;aspect-ratio:4/5;border-radius:8px;display:block;background:var(--line)}
 .stage-meta{width:100%;max-width:var(--stw);display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .stage-meta b{color:var(--fg);font-weight:600;font-size:13px}
@@ -134,6 +135,10 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
       <div class="seg" role="group" aria-label="화면 테마">
         <button id="thLight" aria-pressed="false">라이트</button>
         <button id="thDark" aria-pressed="false">다크</button>
+      </div>
+      <div class="seg" role="group" aria-label="미리보기 크기">
+        <button id="pvBig" aria-pressed="true">크게</button>
+        <button id="pvSmall" aria-pressed="false">작게</button>
       </div>
       <button id="saveQuick">임시저장</button>
       <button class="primary" id="saveAll">전체 저장</button>
@@ -272,6 +277,10 @@ function setTheme(t){
 $('thLight').onclick=()=>{setTheme('light');try{localStorage.setItem('cs-theme','light')}catch(e){}};
 $('thDark').onclick=()=>{setTheme('dark');try{localStorage.setItem('cs-theme','dark')}catch(e){}};
 try{setTheme(localStorage.getItem('cs-theme'))}catch(e){setTheme(null)}
+function setPv(v){const sm=v==='small';document.body.classList.toggle('pv-small',sm);$('pvBig').setAttribute('aria-pressed',String(!sm));$('pvSmall').setAttribute('aria-pressed',String(sm))}
+$('pvBig').onclick=()=>{setPv('big');try{localStorage.setItem('cs-preview','big')}catch(e){}};
+$('pvSmall').onclick=()=>{setPv('small');try{localStorage.setItem('cs-preview','small')}catch(e){}};
+try{setPv(localStorage.getItem('cs-preview'))}catch(e){setPv('big')}
 
 /* ---------- example images ---------- */
 function toImg(c){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=c.toDataURL('image/png')})}
