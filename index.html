@@ -244,7 +244,7 @@ select{font:inherit;font-size:13px;color:var(--fg);background:var(--soft);border
       </div>
       <details class="group cap">
         <summary>캡션 미리보기 <span class="sub"><button class="text" id="copyCap">복사</button></span></summary>
-        <div class="body"><textarea id="caption" readonly aria-label="완성된 캡션"></textarea></div>
+        <div class="body"><textarea id="caption" aria-label="캡션 (직접 수정 가능)"></textarea><div class="rowv" style="margin-top:8px"><span class="mini" id="capState" style="margin:0">직접 고칠 수 있어요. 고치면 자동 업데이트가 멈춰요.</span><button class="text" id="capReset" hidden>자동 캡션으로 되돌리기</button></div></div>
       </details>
       <p class="hint" id="dlNote" hidden>이 화면에서는 파일 저장이 안 돼요. claude.ai에서 열면 저장할 수 있어요.</p>
     </div>
@@ -260,7 +260,7 @@ const state={
   coverTitle:"표지 제목이\n노출됩니다.",coverImg:null,coverZoom:1,coverY:.5,coverSample:false,
   account:"moi.collects",bg:"#D6D7D9",tpl:"A",bkW:420,bkH:580,bkLw:1,bkLc:"#000000",mvFill:"#F2F2F2",mvInk:"#202020",mvLc:"#000000",mvLw:1,mvW:660,emoji:"🍽️",unit:"₩",
   intro:"",
-  sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects",products:[],bgLock:false
+  sign:"사적인 취향을 넘치게 담은 큐레이션 계정\n@moi.collects",products:[],bgLock:false,capEdit:null
 };
 const stDefault={stBg:'#CFE5C0',stInk:'#1B1F1A',stBorder:'#26302A',stBorderOn:true,stSize:22,stLine:'solid',stOpacity:100};
 let stLast=Object.assign({},stDefault);
@@ -802,12 +802,15 @@ function renderSlides(){
   state.products.forEach((p,i)=>drawProduct(canvases[i+1].cv,p));
   markActive();drawStage();
   $('slideCount').textContent=`슬라이드 ${n}장 · 1080×1350`;
-  $('caption').value=buildCaption();
+  if(state.capEdit==null)$('caption').value=buildCaption();
   persist();
 }
 let raf=0;function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(renderSlides)}
 
 /* ---------- copy / save ---------- */
+function markCap(){const ed=state.capEdit!=null;$('capReset').hidden=!ed;$('capState').textContent=ed?'직접 수정 중이라 제품을 바꿔도 캡션은 그대로예요.':'직접 고칠 수 있어요. 고치면 자동 업데이트가 멈춰요.';if(ed&&$('caption').value!==state.capEdit)$('caption').value=state.capEdit}
+$('caption').addEventListener('input',e=>{const was=state.capEdit!=null;state.capEdit=e.target.value;if(!was)markCap()});
+$('capReset').addEventListener('click',()=>{state.capEdit=null;$('caption').value=buildCaption();markCap();toast('자동 캡션으로 되돌렸어요')});
 $('copyCap').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();
   const fb=()=>{$('caption').focus();$('caption').select();toast('선택됐어요. 복사해서 쓰세요')};
   try{navigator.clipboard.writeText($('caption').value).then(()=>toast('캡션을 복사했어요'),fb)}catch(e){fb()}
@@ -875,7 +878,7 @@ document.addEventListener('paste',e=>{
 /* ---------- 임시저장 (IndexedDB, 여러 개) ---------- */
 function dbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('carousel-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function dbDo(mode,fn){const db=await dbOpen();return new Promise((res,rej)=>{const t=db.transaction('saves',mode),req=fn(t.objectStore('saves'));t.oncomplete=()=>{db.close();res(req&&req.result)};t.onerror=()=>{db.close();rej(t.error)};t.onabort=()=>{db.close();rej(t.error)}})}
-const SAVE_KEYS=['coverTitle','emoji','unit','intro','sign','bg','account','tpl','coverZoom','coverY','bkW','bkH','bkLw','bkLc','mvFill','mvInk','mvLc','mvLw','mvW'];
+const SAVE_KEYS=['capEdit','coverTitle','emoji','unit','intro','sign','bg','account','tpl','coverZoom','coverY','bkW','bkH','bkLw','bkLc','mvFill','mvInk','mvLc','mvLw','mvW'];
 function ser(v){if(v instanceof HTMLImageElement)return{__img:v.src};if(Array.isArray(v))return v.map(ser);if(v&&typeof v==='object'){const o={};for(const k in v)if(k[0]!=='_')o[k]=ser(v[k]);return o}return v}
 function loadSrc(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src})}
 async function deser(v){if(v&&v.__img)return loadSrc(v.__img);if(Array.isArray(v))return Promise.all(v.map(deser));if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await deser(v[k]);return o}return v}
@@ -892,7 +895,7 @@ async function loadWork(id){
     if(S.lyLast)Object.assign(lyLast,S.lyLast);openId=null;sel=0;
     KEYS.forEach(k=>$(k).value=state[k]);$('bgHex').value=state.bg.toUpperCase();$('coverZoom').value=state.coverZoom;$('coverY').value=state.coverY;
     $('coverTh').style.backgroundImage=state.coverImg?`url(${state.coverImg.src})`:'';
-    markTpl();renderList();schedule();toast(`'${rec.name}' 불러왔어요`)}catch(e){toast('불러오지 못했어요')}
+    if(S.capEdit===undefined)state.capEdit=null;markTpl();renderList();markCap();schedule();toast(`'${rec.name}' 불러왔어요`)}catch(e){toast('불러오지 못했어요')}
 }
 async function renderSaves(){
   const box=$('saveList');let list=[];
